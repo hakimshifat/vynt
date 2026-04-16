@@ -3,7 +3,7 @@ import { Product } from "./types";
 export const PRODUCTS: Product[] = [
   {
     id: "1",
-    name: "Nike Air Max Dn",
+    name: "Vynt Air Max Dn",
     category: "Men's Shoes",
     price: 16000,
     image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1000",
@@ -20,11 +20,11 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "2",
-    name: "Nike Dunk Low Retro",
+    name: "Vynt Dunk Low Retro",
     category: "Men's Shoes",
     price: 11500,
     image: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=1000",
-    description: "Created for the hardwood but taken to the streets, the Nike Dunk Low Retro returns with crisp overlays and original team colors.",
+    description: "Created for the hardwood but taken to the streets, the Vynt Dunk Low Retro returns with crisp overlays and original team colors.",
     colors: ["Panda", "UNC Blue", "Michigan State"],
     sizes: ["39", "40", "41", "42", "43", "44", "45"],
     gallery: [
@@ -36,7 +36,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "3",
-    name: "Nike Air Jordan 1 High OG",
+    name: "Vynt Air Jordan 1 High OG",
     category: "Men's Shoes",
     price: 18000,
     image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=80&w=1000",
@@ -53,11 +53,11 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "4",
-    name: "Nike Air Force 1 '07",
+    name: "Vynt Air Force 1 '07",
     category: "Men's Shoes",
     price: 11500,
     image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=1000",
-    description: "The radiance lives on in the Nike Air Force 1 '07, the b-ball icon that puts a fresh spin on what you know best.",
+    description: "The radiance lives on in the Vynt Air Force 1 '07, the b-ball icon that puts a fresh spin on what you know best.",
     colors: ["White/White", "Black/Black"],
     sizes: ["39", "40", "41", "42", "43", "44", "45"],
     gallery: [
@@ -68,7 +68,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "5",
-    name: "Nike Zoom Vomero 5",
+    name: "Vynt Zoom Vomero 5",
     category: "Men's Shoes",
     price: 16000,
     image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&q=80&w=1000",
@@ -83,7 +83,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "6",
-    name: "Nike Pegasus 40",
+    name: "Vynt Pegasus 40",
     category: "Men's Running Shoes",
     price: 13000,
     image: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?auto=format&fit=crop&q=80&w=1000",

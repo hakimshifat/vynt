@@ -28,7 +28,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="text-2xl font-black tracking-tighter uppercase">
-            NIKE
+            VYNT
           </Link>
 
           {/* Desktop Nav */}
@@ -113,7 +113,7 @@ const Footer = () => (
           </ul>
         </div>
         <div className="space-y-4">
-          <h4 className="text-xs font-black uppercase tracking-widest">About Nike</h4>
+          <h4 className="text-xs font-black uppercase tracking-widest">About Vynt</h4>
           <ul className="text-xs text-nike-white/60 space-y-2">
             <li>News</li>
             <li>Careers</li>
@@ -130,13 +130,13 @@ const Footer = () => (
       </div>
       <div className="pt-8 border-t border-nike-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] text-nike-white/40 space-y-4 md:space-y-0">
         <div className="flex items-center space-x-4">
-          <span className="text-nike-white">© 2024 Nike, Inc. All Rights Reserved</span>
+          <span className="text-nike-white">© 2024 Vynt, Inc. All Rights Reserved</span>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 md:mt-0">
           <span>Guides</span>
           <span>Terms of Sale</span>
           <span>Terms of Use</span>
-          <span>Nike Privacy Policy</span>
+          <span>Vynt Privacy Policy</span>
         </div>
       </div>
     </div>

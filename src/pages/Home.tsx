@@ -26,7 +26,7 @@ const Home = () => {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="text-nike-black text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8]"
           >
-            Nike Air <br />
+            Vynt Air <br />
             Pulse Roam
           </motion.h1>
           <motion.p
