@@ -12,6 +12,12 @@ const Home = () => {
     <div className="space-y-20 pb-20">
       {/* Hero Section */}
       <section className="relative h-[80vh] sm:h-[90vh] overflow-hidden flex items-center justify-center bg-nike-gray">
+        <img 
+          src="https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=2000" 
+          alt="Hero Background" 
+          className="absolute inset-0 w-full h-full object-cover opacity-30 object-center pointer-events-none mix-blend-multiply transition-transform duration-[10s] hover:scale-105" 
+          referrerPolicy="no-referrer"
+        />
         <div className="text-bg-giant">AIRMAX</div>
         <div className="relative z-10 text-center space-y-6 px-4">
           <motion.h1
