@@ -7,6 +7,7 @@ export interface Product {
   description: string;
   colors: string[];
   sizes: string[];
+  gallery?: string[];
   isNew?: boolean;
   isFeatured?: boolean;
 }

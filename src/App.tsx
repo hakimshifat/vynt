@@ -8,6 +8,7 @@ import { HashRouter as Router, Routes, Route, Link, useLocation } from "react-ro
 import { ShoppingBag, Search, Menu, X, Instagram, Twitter, Facebook, Youtube } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CartProvider, useCart } from "./CartContext";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Lazy load pages
 const Home = lazy(() => import("./pages/Home"));
@@ -120,7 +121,7 @@ const Footer = () => (
             <li>Sustainability</li>
           </ul>
         </div>
-        <div className="flex space-x-4 justify-start md:justify-end">
+        <div className="flex flex-wrap justify-start md:justify-end gap-4">
           <Twitter size={20} className="text-nike-white/60 hover:text-nike-white cursor-pointer" />
           <Facebook size={20} className="text-nike-white/60 hover:text-nike-white cursor-pointer" />
           <Youtube size={20} className="text-nike-white/60 hover:text-nike-white cursor-pointer" />
@@ -131,7 +132,7 @@ const Footer = () => (
         <div className="flex items-center space-x-4">
           <span className="text-nike-white">© 2024 Nike, Inc. All Rights Reserved</span>
         </div>
-        <div className="flex space-x-6">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 md:mt-0">
           <span>Guides</span>
           <span>Terms of Sale</span>
           <span>Terms of Use</span>
@@ -157,6 +158,7 @@ export default function App() {
   return (
     <CartProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen flex flex-col">
           <Navbar />
           <main className="flex-grow pt-[60px]">

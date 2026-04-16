@@ -12,7 +12,12 @@ const ProductDetail = () => {
 
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(product?.colors[0] || "");
+  const [activeImage, setActiveImage] = useState(product?.image || "");
   const [error, setError] = useState("");
+
+  React.useEffect(() => {
+    if (product) setActiveImage(product.image);
+  }, [product?.id]);
 
   if (!product) {
     return (
@@ -43,16 +48,35 @@ const ProductDetail = () => {
 
       <div className="flex flex-col lg:flex-row gap-0 border border-nike-gray">
         {/* Image Gallery */}
-        <div className="lg:w-[60%] bg-nike-gray p-12 flex items-center justify-center relative overflow-hidden">
-          <div className="text-bg-giant opacity-[0.05]">AIRMAX</div>
-          <div className="relative z-10 w-full max-w-lg aspect-square">
-            <img 
-              src={product.image} 
-              alt={product.name} 
-              className="w-full h-full object-cover filter drop-shadow-[0_40px_60px_rgba(0,0,0,0.1)]" 
-              referrerPolicy="no-referrer" 
-            />
+        <div className="lg:w-[60%] flex flex-col border-r border-nike-gray">
+          <div className="bg-nike-gray p-12 flex items-center justify-center relative overflow-hidden flex-grow">
+            <div className="text-bg-giant opacity-[0.05]">AIRMAX</div>
+            <div className="relative z-10 w-full max-w-lg aspect-square">
+              <img 
+                key={activeImage}
+                src={activeImage || product.image} 
+                alt={product.name} 
+                className="w-full h-full object-cover filter drop-shadow-[0_40px_60px_rgba(0,0,0,0.1)] animate-in fade-in duration-500" 
+                referrerPolicy="no-referrer" 
+              />
+            </div>
           </div>
+          {/* Thumbnails */}
+          {product.gallery && product.gallery.length > 0 && (
+            <div className="flex gap-4 p-6 bg-nike-white overflow-x-auto no-scrollbar border-t border-nike-gray">
+              {[product.image, ...product.gallery].map((imgUrl, i) => (
+                <button 
+                  key={i} 
+                  onClick={() => setActiveImage(imgUrl)}
+                  className={`w-24 h-24 flex-shrink-0 bg-nike-gray border-2 transition-all ${
+                    (activeImage || product.image) === imgUrl ? 'border-nike-black opacity-100' : 'border-transparent opacity-60 hover:opacity-100 hover:border-nike-gray'
+                  }`}
+                >
+                  <img src={imgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`thumbnail ${i}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product Info */}

@@ -27,7 +27,7 @@
 
 @layer base {
   body {
-    @apply bg-nike-white text-nike-black font-sans antialiased selection:bg-nike-black selection:text-nike-white;
+    @apply bg-nike-white text-nike-black font-sans antialiased selection:bg-nike-black selection:text-nike-white overflow-x-hidden w-full;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -37,7 +37,7 @@
 
 @layer utilities {
   .text-bg-giant {
-    @apply absolute font-black text-[180px] text-nike-black/[0.03] pointer-events-none whitespace-nowrap top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0;
+    @apply absolute font-black text-[30vw] lg:text-[180px] text-nike-black/[0.03] pointer-events-none whitespace-nowrap top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0;
   }
 
   .btn-bold {
