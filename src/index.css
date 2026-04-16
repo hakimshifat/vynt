@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --color-nike-black: #111111;
+  --color-nike-white: #FFFFFF;
+  --color-nike-gray: #F5F5F5;
+  --color-nike-muted: #757575;
+  --color-nike-accent: #111111; /* In this theme, accent is often just black */
+
+  --animate-slam-in: slam-in 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes slam-in {
+    0% { transform: scale(1.2) translateY(40px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  @keyframes fade-up {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-nike-white text-nike-black font-sans antialiased selection:bg-nike-black selection:text-nike-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-extrabold tracking-tighter uppercase;
+  }
+}
+
+@layer utilities {
+  .text-bg-giant {
+    @apply absolute font-black text-[180px] text-nike-black/[0.03] pointer-events-none whitespace-nowrap top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0;
+  }
+
+  .btn-bold {
+    @apply h-[54px] rounded-[30px] flex items-center justify-center font-semibold text-base transition-all;
+  }
+
+  .text-edge-outline {
+    -webkit-text-stroke: 1px currentColor;
+    color: transparent;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
