@@ -33,7 +33,7 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex space-x-6 items-center">
-            {["Men", "Women", "Kids", "Sale", "Custom"].map((item) => (
+            {["Men's Shoes", "Running", "Sale", "Custom"].map((item) => (
               <Link
                 key={item}
                 to="/shop"
@@ -76,7 +76,7 @@ const Navbar = () => {
             exit={{ opacity: 0, y: -20 }}
             className="md:hidden bg-nike-white border-b border-nike-black/5 px-4 pt-2 pb-6"
           >
-            {["New Drops", "Men", "Women", "Kids", "Sale"].map((item) => (
+            {["New Drops", "Men's Shoes", "Running", "Sale"].map((item) => (
               <Link
                 key={item}
                 to="/shop"

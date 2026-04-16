@@ -100,11 +100,10 @@ const Home = () => {
       {/* Categories Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">Shop by Category</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { name: "Men", img: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=1000" },
-            { name: "Women", img: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=1000" },
-            { name: "Kids", img: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&q=80&w=1000" },
+            { name: "Sneakers", img: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=1000" },
+            { name: "Running", img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?auto=format&fit=crop&q=80&w=1000" },
           ].map((cat, i) => (
             <Link key={cat.name} to="/shop" className="relative h-[400px] overflow-hidden group">
               <img

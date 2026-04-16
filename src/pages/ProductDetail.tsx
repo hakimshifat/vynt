@@ -85,7 +85,7 @@ const ProductDetail = () => {
             <div className="space-y-2">
               <p className="text-sm font-medium text-nike-black uppercase">Sustainable Materials</p>
               <h1 className="text-4xl font-extrabold uppercase tracking-tighter leading-none">{product.name}</h1>
-              <p className="text-lg font-semibold mt-2">${product.price}.00</p>
+              <p className="text-lg font-semibold mt-2">৳{product.price.toLocaleString()}</p>
             </div>
 
             <div className="description">
@@ -129,7 +129,7 @@ const ProductDetail = () => {
                     selectedSize === size ? "border-nike-black font-semibold" : "border-nike-gray hover:border-nike-muted"
                   }`}
                 >
-                  US {size}
+                  BD {size}
                 </button>
               ))}
             </div>

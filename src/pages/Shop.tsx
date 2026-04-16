@@ -8,7 +8,7 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFilterOpen, setIsFilterOpen] = useState(true);
 
-  const categories = ["All", "Men's Shoes", "Men's Running Shoes", "Women's Shoes", "Kids' Shoes"];
+  const categories = ["All", "Men's Shoes", "Men's Running Shoes"];
 
   const filteredProducts = selectedCategory === "All"
     ? PRODUCTS
@@ -72,14 +72,7 @@ const Shop = () => {
                 </div>
               </div>
 
-              <div className="space-y-4 pt-8 border-t border-nike-black/5">
-                <h3 className="text-sm font-black uppercase tracking-widest">Color</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {["bg-black", "bg-white border", "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500"].map((color, i) => (
-                    <div key={i} className={`w-full aspect-square ${color} rounded-full cursor-pointer hover:scale-110 transition-transform`} />
-                  ))}
-                </div>
-              </div>
+              {/* Removed Color Filter */}
             </motion.aside>
           )}
         </AnimatePresence>

@@ -35,7 +35,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
           <h3 className="text-sm font-extrabold uppercase tracking-tighter group-hover:underline">
             <Link to={`/product/${product.id}`}>{product.name}</Link>
           </h3>
-          <p className="text-sm font-semibold">${product.price}</p>
+          <p className="text-sm font-semibold">৳{product.price.toLocaleString()}</p>
         </div>
         <p className="text-xs text-nike-muted font-medium uppercase">{product.category}</p>
       </div>

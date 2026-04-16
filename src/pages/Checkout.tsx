@@ -8,6 +8,7 @@ const Checkout = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("card");
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +59,7 @@ const Checkout = () => {
                 </div>
                 <div className="p-6 border-2 border-nike-black/10 rounded-xl space-y-2 cursor-pointer hover:border-nike-black/40 transition-colors">
                   <p className="text-sm font-black uppercase tracking-widest">Express Delivery</p>
-                  <p className="text-xs text-nike-black/60 font-medium uppercase tracking-widest">$25.00 | 1-2 Business Days</p>
+                  <p className="text-xs text-nike-black/60 font-medium uppercase tracking-widest">৳2,500 | 1-2 Business Days</p>
                 </div>
               </div>
             </section>
@@ -83,22 +84,47 @@ const Checkout = () => {
                 <h2 className="text-xl font-black uppercase tracking-tighter">Payment</h2>
               </div>
               <div className="space-y-4">
-                <div className="p-6 border border-nike-black/10 rounded-xl flex items-center justify-between cursor-pointer hover:border-nike-black/40 transition-colors">
+                {/* Card Option */}
+                <div 
+                  onClick={() => setPaymentMethod("card")}
+                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${paymentMethod === "card" ? "border-nike-black" : "border-nike-black/10 hover:border-nike-black/40"}`}
+                >
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-6 bg-nike-black rounded flex items-center justify-center text-[8px] text-nike-white font-bold">VISA</div>
                     <span className="text-sm font-bold uppercase tracking-widest">Credit or Debit Card</span>
                   </div>
-                  <div className="w-4 h-4 border-2 border-nike-black rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-nike-black rounded-full" />
+                  <div className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${paymentMethod === "card" ? "border-nike-black" : "border-nike-black/20"}`}>
+                    {paymentMethod === "card" && <div className="w-2 h-2 bg-nike-black rounded-full" />}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <input required placeholder="Card Number" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input required placeholder="MM/YY" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
-                    <input required placeholder="CVV" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+
+                {/* bKash Option */}
+                <div 
+                  onClick={() => setPaymentMethod("bkash")}
+                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/10 hover:border-nike-black/40"}`}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="px-3 py-1 bg-[#e2136e] rounded flex items-center justify-center text-[10px] text-white font-black tracking-widest">bKash</div>
+                    <span className="text-sm font-bold uppercase tracking-widest">Pay with bKash</span>
+                  </div>
+                  <div className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/20"}`}>
+                    {paymentMethod === "bkash" && <div className="w-2 h-2 bg-[#e2136e] rounded-full" />}
                   </div>
                 </div>
+
+                {paymentMethod === "card" ? (
+                  <div className="grid grid-cols-1 gap-4 mt-4">
+                    <input required placeholder="Card Number" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input required placeholder="MM/YY" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+                      <input required placeholder="CVV" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 mt-4">
+                    <input required placeholder="bKash Account Number" className="w-full px-6 py-4 border border-[#e2136e]/20 rounded-xl text-sm focus:border-[#e2136e] outline-none transition-colors" />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -124,7 +150,7 @@ const Checkout = () => {
                   <div className="flex-grow">
                     <p className="text-xs font-black uppercase tracking-tight">{item.name}</p>
                     <p className="text-[10px] text-nike-black/60 font-medium uppercase tracking-widest">Qty {item.quantity} | Size {item.selectedSize}</p>
-                    <p className="text-xs font-bold mt-1">${item.price * item.quantity}</p>
+                    <p className="text-xs font-bold mt-1">৳{(item.price * item.quantity).toLocaleString()}</p>
                   </div>
                 </div>
               ))}
@@ -132,15 +158,15 @@ const Checkout = () => {
             <div className="pt-6 border-t border-nike-black/10 space-y-2 text-sm font-medium uppercase tracking-widest">
               <div className="flex justify-between">
                 <span className="text-nike-black/60">Subtotal</span>
-                <span>${cartTotal}</span>
+                <span>৳{cartTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-nike-black/60">Shipping</span>
-                <span>Free</span>
+                <span className="text-nike-black/60">Shipping & Tax</span>
+                <span>৳2,000</span>
               </div>
               <div className="pt-4 border-t border-nike-black/10 flex justify-between text-lg font-black">
                 <span>Total</span>
-                <span>${cartTotal}</span>
+                <span>৳{(cartTotal + 2000).toLocaleString()}</span>
               </div>
             </div>
             <div className="flex items-center space-x-2 text-[10px] text-nike-black/40 font-bold uppercase tracking-widest">

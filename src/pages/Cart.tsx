@@ -46,7 +46,7 @@ const Cart = () => {
                 <div className="flex-grow space-y-2">
                   <div className="flex justify-between items-start">
                     <h3 className="text-sm sm:text-lg font-black uppercase tracking-tight">{item.name}</h3>
-                    <p className="text-sm sm:text-lg font-bold">${item.price * item.quantity}</p>
+                    <p className="text-sm sm:text-lg font-bold">৳{(item.price * item.quantity).toLocaleString()}</p>
                   </div>
                   <p className="text-xs sm:text-sm text-nike-black/60 font-medium uppercase tracking-widest">{item.category}</p>
                   <p className="text-xs sm:text-sm text-nike-black/60 font-medium uppercase tracking-widest">
@@ -89,19 +89,19 @@ const Cart = () => {
             <div className="space-y-4 text-sm font-medium uppercase">
               <div className="flex justify-between">
                 <span className="text-nike-muted">Subtotal</span>
-                <span className="font-semibold">${cartTotal}.00</span>
+                <span className="font-semibold">৳{cartTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-nike-muted">Estimated Shipping</span>
-                <span className="font-semibold">$8.00</span>
+                <span className="font-semibold">৳800</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-nike-muted">Tax</span>
-                <span className="font-semibold">$12.40</span>
+                <span className="font-semibold">৳1,200</span>
               </div>
               <div className="pt-4 border-t border-nike-gray border-dashed flex justify-between text-lg font-black">
                 <span>Total</span>
-                <span>${cartTotal + 20.4}.00</span>
+                <span>৳{(cartTotal + 2000).toLocaleString()}</span>
               </div>
             </div>
             <Link
