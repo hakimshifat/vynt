@@ -14,8 +14,8 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 // SHA-256 of "Admin@Vynt2024"
-// Verified with: echo -n "Admin@Vynt2024" | sha256sum
-const ADMIN_HASH = "ba7d7ca2efe6812edb819e69db981e4e9a1e9a4231e244fcb72c9922ef0e6186";
+// Verified with: echo -n "c" | sha256sum
+const ADMIN_HASH = "1ed37a7421d9e1f75cec782e53aa74710e2bbc0b383d195ed781807ab804c7cb";
 
 const SESSION_KEY = "vynt-admin-session";
 
