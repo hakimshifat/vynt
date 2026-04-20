@@ -22,6 +22,8 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
+import { FavouriteProvider } from "./FavouriteContext";
+
 const Navbar = () => {
   const { cartCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -172,47 +174,49 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => (
 export default function App() {
   return (
     <AdminProvider>
-      <ProductProvider>
-        <VoucherProvider>
-          <CartProvider>
-            <Router>
-            <ScrollToTop />
-            <div className="min-h-screen flex flex-col">
-              <Suspense fallback={
-                <div className="h-screen w-full flex items-center justify-center">
-                  <div className="w-12 h-12 border-4 border-nike-black border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              }>
-                <AnimatePresence mode="wait">
-                  <Routes>
-                    {/* Admin routes — no Navbar/Footer */}
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route path="/admin" element={<AdminDashboard />} />
+      <FavouriteProvider>
+        <ProductProvider>
+          <VoucherProvider>
+            <CartProvider>
+              <Router>
+              <ScrollToTop />
+              <div className="min-h-screen flex flex-col">
+                <Suspense fallback={
+                  <div className="h-screen w-full flex items-center justify-center">
+                    <div className="w-12 h-12 border-4 border-nike-black border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                }>
+                  <AnimatePresence mode="wait">
+                    <Routes>
+                      {/* Admin routes — no Navbar/Footer */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      <Route path="/admin" element={<AdminDashboard />} />
 
-                    {/* Public store routes */}
-                    <Route path="/*" element={
-                      <>
-                        <Navbar />
-                        <main className="flex-grow pt-[60px]">
-                          <Routes>
-                            <Route path="/" element={<PageTransition><Home /></PageTransition>} />
-                            <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
-                            <Route path="/product/:id" element={<PageTransition><ProductDetail /></PageTransition>} />
-                            <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />
-                            <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
-                          </Routes>
-                        </main>
-                        <Footer />
-                      </>
-                    } />
-                  </Routes>
-                </AnimatePresence>
-              </Suspense>
-          </div>
-            </Router>
-          </CartProvider>
-        </VoucherProvider>
-      </ProductProvider>
+                      {/* Public store routes */}
+                      <Route path="/*" element={
+                        <>
+                          <Navbar />
+                          <main className="flex-grow pt-[60px]">
+                            <Routes>
+                              <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+                              <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
+                              <Route path="/product/:id" element={<PageTransition><ProductDetail /></PageTransition>} />
+                              <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />
+                              <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
+                            </Routes>
+                          </main>
+                          <Footer />
+                        </>
+                      } />
+                    </Routes>
+                  </AnimatePresence>
+                </Suspense>
+            </div>
+              </Router>
+            </CartProvider>
+          </VoucherProvider>
+        </ProductProvider>
+      </FavouriteProvider>
     </AdminProvider>
   );
 }

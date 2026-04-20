@@ -30,6 +30,8 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
   gallery: [],
   isNew: false,
   isFeatured: false,
+  subtitle: "",
+  scarcityMessage: "",
 };
 
 const CATEGORIES = ["Men's Shoes", "Men's Running Shoes", "Limited Edition", "Sale"];
@@ -353,6 +355,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ initial, onSave, onCancel }) 
       ...form,
       name: form.name.trim(),
       description: form.description.trim(),
+      subtitle: form.subtitle?.trim(),
+      scarcityMessage: form.scarcityMessage?.trim(),
       colors: colorsInput.split(",").map(s => s.trim()).filter(Boolean),
       sizes: sizesInput.split(",").map(s => s.trim()).filter(Boolean),
     };
@@ -479,6 +483,30 @@ const ProductForm: React.FC<ProductFormProps> = ({ initial, onSave, onCancel }) 
           placeholder="Describe the product — materials, technology, style..."
           value={form.description}
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+        />
+      </div>
+
+      <div>
+        <h2 className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <AlignLeft size={10} /> Subtitle / Short Description
+        </h2>
+        <input
+          className="admin-input"
+          placeholder="e.g. Taking inspiration from its predecessor..."
+          value={form.subtitle || ""}
+          onChange={e => setForm(f => ({ ...f, subtitle: e.target.value }))}
+        />
+      </div>
+
+      <div>
+        <h2 className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <Ticket size={10} /> Scarcity Message (Optional)
+        </h2>
+        <input
+          className="admin-input"
+          placeholder="e.g. Only 3 pairs left in stock!"
+          value={form.scarcityMessage || ""}
+          onChange={e => setForm(f => ({ ...f, scarcityMessage: e.target.value }))}
         />
       </div>
 

@@ -4,6 +4,8 @@ import { Heart, ShoppingBag, ChevronRight, Star } from "lucide-react";
 import { motion } from "motion/react";
 import { useProducts } from "../ProductContext";
 import { useCart } from "../CartContext";
+import { useFavourites } from "../FavouriteContext";
+import SizeGuideModal from "../components/SizeGuideModal";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -15,6 +17,17 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState(product?.colors[0] || "");
   const [activeImage, setActiveImage] = useState(product?.image || "");
   const [error, setError] = useState("");
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [bgPos, setBgPos] = useState({ x: 50, y: 50 });
+
+  const { toggleFavourite, isFavourite } = useFavourites();
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setBgPos({ x, y });
+  };
 
   React.useEffect(() => {
     if (product) setActiveImage(product.image);
@@ -52,14 +65,20 @@ const ProductDetail = () => {
         <div className="lg:w-[60%] flex flex-col border-r border-nike-gray">
           <div className="bg-nike-gray p-12 flex items-center justify-center relative overflow-hidden flex-grow">
             <div className="text-bg-giant opacity-[0.05]">AIRMAX</div>
-            <div className="relative z-10 w-full max-w-lg aspect-square">
-              <img 
-                key={activeImage}
-                src={activeImage || product.image} 
-                alt={product.name} 
-                className="w-full h-full object-cover filter drop-shadow-[0_40px_60px_rgba(0,0,0,0.1)] animate-in fade-in duration-500" 
-                referrerPolicy="no-referrer" 
-              />
+            <div className="relative z-10 w-full max-w-lg aspect-square group cursor-crosshair">
+              <div 
+                className="absolute inset-0 overflow-hidden"
+                onMouseMove={handleMouseMove}
+              >
+                <img 
+                  key={activeImage}
+                  src={activeImage || product.image} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover filter drop-shadow-[0_40px_60px_rgba(0,0,0,0.1)] animate-in fade-in duration-500 transition-transform duration-[400ms] group-hover:scale-[1.8] ease-out transform-gpu pointer-events-none" 
+                  style={{ transformOrigin: `${bgPos.x}% ${bgPos.y}%` }}
+                  referrerPolicy="no-referrer" 
+                />
+              </div>
             </div>
           </div>
           {/* Thumbnails */}
@@ -89,10 +108,19 @@ const ProductDetail = () => {
               <p className="text-lg font-semibold mt-2">৳{product.price.toLocaleString()}</p>
             </div>
 
-            <div className="description">
-              <p className="text-sm leading-relaxed text-nike-muted">
-                Taking inspiration from its predecessor, the Air Max Pulse Roam is all about performance meeting the street. Durable, textile-wrapped midsole and vacuum-sealed accents keep the look fresh.
-              </p>
+            <div className="space-y-4">
+              {product.subtitle && (
+                <div className="description">
+                  <p className="text-sm leading-relaxed text-nike-muted">
+                    {product.subtitle}
+                  </p>
+                </div>
+              )}
+              {product.scarcityMessage && (
+                <div className="bg-red-50 border border-red-100 text-red-600 font-bold text-[10px] uppercase tracking-widest py-1.5 px-3 rounded-md w-fit">
+                  {product.scarcityMessage}
+                </div>
+              )}
             </div>
           </div>
 
@@ -119,7 +147,12 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-semibold uppercase">Select Size</h3>
-              <button className="text-sm text-nike-muted hover:text-nike-black transition-colors">Size Guide</button>
+              <button 
+                onClick={() => setIsSizeGuideOpen(true)}
+                className="text-sm text-nike-muted hover:text-nike-black transition-colors underline"
+              >
+                Size Guide
+              </button>
             </div>
             <div className="grid grid-cols-4 gap-2">
               {product.sizes.map(size => (
@@ -145,8 +178,12 @@ const ProductDetail = () => {
             >
               Add to Bag
             </button>
-            <button className="btn-bold w-full border-1.5 border-nike-black/20 text-nike-black hover:border-nike-black">
-              Favourite ♡
+            <button 
+              onClick={() => toggleFavourite(product.id)}
+              className={`btn-bold w-full border-1.5 transition-colors flex items-center justify-center gap-2 ${isFavourite(product.id) ? "bg-red-500 text-white border-red-500 hover:bg-red-600" : "border-nike-black/20 text-nike-black hover:border-nike-black"}`}
+            >
+              <Heart size={16} className={isFavourite(product.id) ? "fill-white" : ""} />
+              {isFavourite(product.id) ? "Favourited" : "Favourite ♡"}
             </button>
           </div>
 
@@ -176,6 +213,8 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      <SizeGuideModal isOpen={isSizeGuideOpen} onClose={() => setIsSizeGuideOpen(false)} />
     </div>
   </div>
 );

@@ -15,6 +15,8 @@ export const PRODUCTS: Product[] = [
       "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=1000",
       "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1000"
     ],
+    subtitle: "Taking inspiration from its predecessor, the Air Max Pulse Roam is all about performance meeting the street. Durable, textile-wrapped midsole and vacuum-sealed accents keep the look fresh.",
+    scarcityMessage: "Only 2 pairs left in stock!",
     isNew: true,
     isFeatured: true,
   },
@@ -32,6 +34,7 @@ export const PRODUCTS: Product[] = [
       "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?auto=format&fit=crop&q=80&w=1000",
       "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=1000",
     ],
+    subtitle: "Classic b-ball style, recrafted for the streets.",
     isFeatured: true,
   },
   {
@@ -48,6 +51,8 @@ export const PRODUCTS: Product[] = [
       "https://images.unsplash.com/photo-1579338559194-a162d19bf842?auto=format&fit=crop&q=80&w=1000",
       "https://images.unsplash.com/photo-1584735174965-48c48d4daf2f?auto=format&fit=crop&q=80&w=1000"
     ],
+    subtitle: "The sneaker that started it all. Premium leather and original details.",
+    scarcityMessage: "High demand item",
     isNew: true,
     isFeatured: true,
   },

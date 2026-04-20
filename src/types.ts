@@ -10,6 +10,8 @@ export interface Product {
   gallery?: string[];
   isNew?: boolean;
   isFeatured?: boolean;
+  subtitle?: string;
+  scarcityMessage?: string;
 }
 
 export interface CartItem extends Product {
