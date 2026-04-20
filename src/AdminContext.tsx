@@ -19,6 +19,9 @@ const ADMIN_HASH = "ba7d7ca2efe6812edb819e69db981e4e9a1e9a4231e244fcb72c9922ef0e
 const SESSION_KEY = "vynt-admin-session";
 
 async function sha256(text: string): Promise<string> {
+  if (!crypto?.subtle?.digest) {
+    throw new Error("INSECURE_CONTEXT");
+  }
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -40,7 +43,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       }
       return false;
-    } catch {
+    } catch (err: any) {
+      if (err.message === "INSECURE_CONTEXT") {
+        throw err;
+      }
       return false;
     }
   };
