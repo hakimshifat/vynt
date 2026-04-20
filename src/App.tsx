@@ -85,17 +85,18 @@ const Navbar = () => {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="md:hidden bg-nike-white border-b border-nike-black/5 px-4 pt-2 pb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed top-[60px] left-0 w-full h-[calc(100vh-60px)] bg-nike-white z-40 flex flex-col items-center justify-start pt-20 space-y-10 overflow-y-auto"
           >
-            {["New Drops", "Men's Shoes", "Running", "Sale"].map((item) => (
+            {["New Drops", "Men's Shoes", "Running", "Sale", "Custom"].map((item) => (
               <Link
                 key={item}
                 to="/shop"
                 onClick={() => setIsMenuOpen(false)}
-                className="block py-3 text-lg font-bold uppercase tracking-widest border-b border-nike-black/5"
+                className="block text-4xl font-black uppercase tracking-tighter hover:text-nike-muted transition-colors"
               >
                 {item}
               </Link>

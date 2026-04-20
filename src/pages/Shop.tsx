@@ -64,7 +64,7 @@ const Shop = () => {
               <div className="space-y-4 pt-8 border-t border-nike-black/5">
                 <h3 className="text-sm font-black uppercase tracking-widest">Shop By Price</h3>
                 <div className="space-y-2">
-                  {["Under $50", "$50 - $100", "$100 - $150", "Over $150"].map(price => (
+                  {["Under ৳5,000", "৳5,000 - ৳10,000", "৳10,000 - ৳15,000", "Over ৳15,000"].map(price => (
                     <label key={price} className="flex items-center space-x-3 cursor-pointer group">
                       <div className="w-5 h-5 border-2 border-nike-black/20 rounded group-hover:border-nike-black transition-colors" />
                       <span className="text-sm font-medium text-nike-black/60 group-hover:text-nike-black">{price}</span>
