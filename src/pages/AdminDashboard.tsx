@@ -10,11 +10,13 @@ import {
   Plus, Trash2, Edit3, X, Save, LogOut, Package,
   RotateCcw, ShieldCheck, ImagePlus, Tag,
   DollarSign, AlignLeft, Palette, Ruler, Star, Zap, CheckCircle2,
-  Upload, Link2, ChevronLeft, ChevronRight, AlertTriangle, Ticket, ToggleLeft, ToggleRight, Percent, Hash
+  Upload, Link2, ChevronLeft, ChevronRight, AlertTriangle, Ticket, ToggleLeft, ToggleRight, Percent, Hash,
+  ShoppingCart, Clock, Truck, CheckCircle, XCircle, ChevronDown, ChevronUp, Loader2
 } from "lucide-react";
 import { useAdmin } from "../AdminContext";
 import { useProducts } from "../ProductContext";
 import { useVouchers, Voucher, DiscountType } from "../VoucherContext";
+import { useOrders, Order, OrderStatus } from "../OrderContext";
 import { Product } from "../types";
 
 const generateId = () => `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -886,14 +888,201 @@ const VoucherPanel: React.FC = () => {
   );
 };
 
+// ─── Orders Panel ──────────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ElementType }> = {
+  pending:   { label: "Pending",   color: "text-amber-400 bg-amber-500/15 border-amber-500/30",   icon: Clock },
+  confirmed: { label: "Confirmed", color: "text-blue-400 bg-blue-500/15 border-blue-500/30",     icon: CheckCircle2 },
+  shipped:   { label: "Shipped",   color: "text-violet-400 bg-violet-500/15 border-violet-500/30", icon: Truck },
+  delivered: { label: "Delivered", color: "text-green-400 bg-green-500/15 border-green-500/30", icon: CheckCircle },
+};
+
+const OrdersPanel: React.FC = () => {
+  const { orders, ordersLoading, updateOrderStatus } = useOrders();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const handleStatusChange = async (id: string, status: OrderStatus) => {
+    setUpdatingId(id);
+    await updateOrderStatus(id, status);
+    setUpdatingId(null);
+  };
+
+  if (ordersLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 size={28} className="animate-spin text-white/30" />
+      </div>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className="text-center py-20 text-white/20">
+        <ShoppingCart size={48} className="mx-auto mb-4 opacity-30" />
+        <p className="text-sm font-bold">No orders yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-black uppercase tracking-tight text-white">Orders</h1>
+        <span className="text-xs text-white/30 font-mono">{orders.length} total</span>
+      </div>
+
+      {orders.map((order, i) => {
+        const isExpanded = expanded === order.id;
+        const sg = STATUS_CONFIG[order.status];
+        const StatusIcon = sg.icon;
+        return (
+          <motion.div
+            key={order.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.03 }}
+            className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden"
+          >
+            {/* Row */}
+            <div
+              className="p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors"
+              onClick={() => setExpanded(isExpanded ? null : order.id)}
+            >
+              {/* Status badge */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider shrink-0 ${sg.color}`}>
+                <StatusIcon size={10} />
+                {sg.label}
+              </div>
+
+              {/* Info */}
+              <div className="flex-grow min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-mono text-violet-400">{order.id}</span>
+                  <span className="text-[10px] text-white/30">
+                    {new Date(order.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-white truncate">
+                  {order.customer.firstName} {order.customer.lastName}
+                </p>
+                <p className="text-[10px] text-white/30">
+                  {order.items.length} item{order.items.length !== 1 ? "s" : ""} &bull;
+                  {order.paymentMethod === "bkash" ? " bKash" : " Card"}
+                  {order.voucherCode ? ` • ${order.voucherCode}` : ""}
+                </p>
+              </div>
+
+              {/* Total */}
+              <div className="text-right shrink-0">
+                <p className="text-base font-black text-white">৳{order.total.toLocaleString()}</p>
+              </div>
+
+              {/* Expand toggle */}
+              <div className="text-white/30">
+                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </div>
+
+            {/* Expanded detail */}
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-5 border-t border-white/5 pt-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Customer */}
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Customer</p>
+                        <p className="text-sm font-bold text-white">{order.customer.firstName} {order.customer.lastName}</p>
+                        {order.customer.email && <p className="text-xs text-white/50">{order.customer.email}</p>}
+                        {order.customer.phone && <p className="text-xs text-white/50">{order.customer.phone}</p>}
+                        <p className="text-xs text-white/40">
+                          {[order.customer.address1, order.customer.address2, order.customer.city, order.customer.postalCode].filter(Boolean).join(", ")}
+                        </p>
+                      </div>
+
+                      {/* Summary */}
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Summary</p>
+                        <div className="text-xs text-white/50 space-y-0.5">
+                          <div className="flex justify-between"><span>Subtotal</span><span>৳{order.subtotal.toLocaleString()}</span></div>
+                          <div className="flex justify-between"><span>Shipping</span><span>৳{order.shipping.toLocaleString()}</span></div>
+                          {order.discount > 0 && <div className="flex justify-between text-green-400"><span>{order.voucherCode}</span><span>−৳{order.discount.toLocaleString()}</span></div>}
+                          <div className="flex justify-between font-black text-white pt-1 border-t border-white/10"><span>Total</span><span>৳{order.total.toLocaleString()}</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Items */}
+                    <div>
+                      <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Items</p>
+                      <div className="space-y-2">
+                        {order.items.map((item, j) => (
+                          <div key={j} className="flex items-center gap-3 bg-white/3 rounded-xl p-2">
+                            <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
+                            <div className="flex-grow min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{item.name}</p>
+                              <p className="text-[10px] text-white/40">Size {item.selectedSize} &bull; {item.selectedColor} &bull; Qty {item.quantity}</p>
+                            </div>
+                            <p className="text-xs font-black text-violet-400 shrink-0">৳{(item.price * item.quantity).toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Status changer */}
+                    <div>
+                      <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Update Status</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((s) => {
+                          const sc = STATUS_CONFIG[s];
+                          const Icon = sc.icon;
+                          const isActive = order.status === s;
+                          const isUpdating = updatingId === order.id;
+                          return (
+                            <button
+                              key={s}
+                              onClick={() => !isActive && handleStatusChange(order.id, s)}
+                              disabled={isActive || isUpdating}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all ${
+                                isActive
+                                  ? sc.color + " scale-105"
+                                  : "border-white/10 text-white/30 hover:border-white/25 hover:text-white/60"
+                              } disabled:cursor-not-allowed`}
+                            >
+                              {isUpdating && !isActive ? <Loader2 size={10} className="animate-spin" /> : <Icon size={10} />}
+                              {sc.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ─── Admin Dashboard ───────────────────────────────────────────────────────────
 
 const AdminDashboard: React.FC = () => {
   const { isAdmin, logout } = useAdmin();
   const { products, addProduct, updateProduct, deleteProduct, resetToDefaults } = useProducts();
   const { vouchers } = useVouchers();
+  const { orders } = useOrders();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"products" | "vouchers">("products");
+  const [tab, setTab] = useState<"products" | "vouchers" | "orders">("products");
   const [mode, setMode] = useState<"list" | "add" | { edit: Product }>("list");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showReset, setShowReset] = useState(false);
@@ -960,11 +1149,12 @@ const AdminDashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
             { label: "Total Products", value: products.length, icon: Package, color: "from-violet-500 to-purple-600" },
-            { label: "Featured Items", value: products.filter(p => p.isFeatured).length, icon: Star, color: "from-amber-500 to-orange-500" },
-            { label: "Voucher Codes", value: vouchers.length, icon: Ticket, color: "from-emerald-500 to-teal-500" },
+            { label: "Featured", value: products.filter(p => p.isFeatured).length, icon: Star, color: "from-amber-500 to-orange-500" },
+            { label: "Vouchers", value: vouchers.length, icon: Ticket, color: "from-emerald-500 to-teal-500" },
+            { label: "Orders", value: orders.length, icon: ShoppingCart, color: "from-blue-500 to-cyan-500" },
           ].map(stat => (
             <div key={stat.label} className="bg-white/4 border border-white/8 rounded-2xl p-5 flex items-center gap-4">
               <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shrink-0`}>
@@ -980,7 +1170,11 @@ const AdminDashboard: React.FC = () => {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white/5 rounded-xl p-1 w-fit mb-6">
-          {(["products", "vouchers"] as const).map(t => (
+          {([
+            { key: "products", label: "Products", icon: Package },
+            { key: "vouchers", label: "Vouchers", icon: Ticket },
+            { key: "orders",   label: "Orders",   icon: ShoppingCart },
+          ] as const).map(({ key: t, label, icon: Icon }) => (
             <button
               key={t}
               onClick={() => { setTab(t); setMode("list"); }}
@@ -988,8 +1182,13 @@ const AdminDashboard: React.FC = () => {
                 tab === t ? "bg-white/10 text-white" : "text-white/30 hover:text-white/60"
               }`}
             >
-              {t === "products" ? <Package size={13} /> : <Ticket size={13} />}
-              {t === "products" ? "Products" : "Vouchers"}
+              <Icon size={13} />
+              {label}
+              {t === "orders" && orders.length > 0 && (
+                <span className="ml-0.5 bg-blue-500/30 text-blue-300 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                  {orders.filter(o => o.status === "pending").length || orders.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -1151,6 +1350,9 @@ const AdminDashboard: React.FC = () => {
 
         {/* Vouchers tab */}
         {tab === "vouchers" && <VoucherPanel />}
+
+        {/* Orders tab */}
+        {tab === "orders" && <OrdersPanel />}
 
       </div>
     </div>

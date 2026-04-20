@@ -1,39 +1,114 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, CreditCard, Truck, ShieldCheck, Tag } from "lucide-react";
+import {
+  CheckCircle,
+  CreditCard,
+  Truck,
+  ShieldCheck,
+  Tag,
+  Phone,
+  Mail,
+  MapPin,
+  Loader2,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useCart } from "../CartContext";
 import { useVouchers } from "../VoucherContext";
+import { useOrders } from "../OrderContext";
+
+interface FormState {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  city: string;
+  postalCode: string;
+}
+
+const EMPTY_FORM: FormState = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address1: "",
+  address2: "",
+  city: "",
+  postalCode: "",
+};
 
 const Checkout = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const { appliedVoucher, removeApplied, incrementUsage } = useVouchers();
+  const { placeOrder } = useOrders();
   const navigate = useNavigate();
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "bkash">("card");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   const shipping = 2000;
   const discount = appliedVoucher
-    ? (appliedVoucher.type === "percent"
-        ? Math.round((cartTotal * appliedVoucher.value) / 100)
-        : Math.min(appliedVoucher.value, cartTotal))
+    ? appliedVoucher.type === "percent"
+      ? Math.round((cartTotal * appliedVoucher.value) / 100)
+      : Math.min(appliedVoucher.value, cartTotal)
     : 0;
   const total = cartTotal + shipping - discount;
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (appliedVoucher) {
-      incrementUsage(appliedVoucher.code);
-      removeApplied();
-    }
-    setIsSuccess(true);
-    setTimeout(() => {
-      clearCart();
-      navigate("/");
-    }, 3000);
+  const handleField = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
   };
 
-  if (isSuccess) {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const id = await placeOrder({
+        customer: {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim() || undefined,
+          phone: form.phone.trim() || undefined,
+          address1: form.address1.trim(),
+          address2: form.address2.trim() || undefined,
+          city: form.city.trim(),
+          postalCode: form.postalCode.trim(),
+        },
+        items: cart,
+        subtotal: cartTotal,
+        shipping,
+        discount,
+        total,
+        paymentMethod,
+        voucherCode: appliedVoucher?.code,
+      });
+
+      if (appliedVoucher) {
+        incrementUsage(appliedVoucher.code);
+        removeApplied();
+      }
+
+      setOrderId(id);
+      setTimeout(() => {
+        clearCart();
+        navigate("/");
+      }, 4000);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong placing your order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Success Screen ────────────────────────────────────────────────────────────
+  if (orderId) {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-6 text-center px-4">
         <motion.div
@@ -45,21 +120,30 @@ const Checkout = () => {
         </motion.div>
         <h1 className="text-4xl font-black uppercase tracking-tighter">Order Placed!</h1>
         <p className="text-sm font-medium text-nike-black/60 uppercase tracking-widest max-w-md">
-          Thank you for your purchase. We've sent a confirmation email to your inbox.
+          Thank you for your purchase.
         </p>
-        <p className="text-xs font-bold uppercase tracking-widest animate-pulse">Redirecting to home...</p>
+        <p className="text-xs font-mono bg-nike-gray px-4 py-2 rounded-lg">
+          Order ID: <strong>{orderId}</strong>
+        </p>
+        <p className="text-xs font-bold uppercase tracking-widest animate-pulse">
+          Redirecting to home...
+        </p>
       </div>
     );
   }
+
+  const inputClass =
+    "w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-black uppercase tracking-tighter mb-12">Checkout</h1>
 
       <div className="flex flex-col lg:flex-row gap-16">
-        {/* Checkout Form */}
+        {/* ── Form ─────────────────────────────────────────────────────────── */}
         <div className="lg:w-2/3">
           <form onSubmit={handlePlaceOrder} className="space-y-12">
+
             {/* Delivery Options */}
             <section className="space-y-6">
               <div className="flex items-center space-x-2">
@@ -67,27 +151,101 @@ const Checkout = () => {
                 <h2 className="text-xl font-black uppercase tracking-tighter">Delivery Options</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-6 border-2 border-nike-black rounded-xl space-y-2 cursor-pointer">
+                <div className="p-6 border-2 border-nike-black rounded-xl space-y-2">
                   <p className="text-sm font-black uppercase tracking-widest">Standard Delivery</p>
-                  <p className="text-xs text-nike-black/60 font-medium uppercase tracking-widest">Free | 3-5 Business Days</p>
-                </div>
-                <div className="p-6 border-2 border-nike-black/10 rounded-xl space-y-2 cursor-pointer hover:border-nike-black/40 transition-colors">
-                  <p className="text-sm font-black uppercase tracking-widest">Express Delivery</p>
-                  <p className="text-xs text-nike-black/60 font-medium uppercase tracking-widest">৳2,500 | 1-2 Business Days</p>
+                  <p className="text-xs text-nike-black/60 font-medium uppercase tracking-widest">
+                    ৳2,000 | 3-5 Business Days
+                  </p>
                 </div>
               </div>
             </section>
 
             {/* Shipping Address */}
             <section className="space-y-6">
-              <h2 className="text-xl font-black uppercase tracking-tighter">Shipping Address</h2>
+              <div className="flex items-center gap-2">
+                <MapPin size={20} />
+                <h2 className="text-xl font-black uppercase tracking-tighter">Shipping Address</h2>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input required placeholder="First Name" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
-                <input required placeholder="Last Name" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
-                <input required placeholder="Address Line 1" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors sm:col-span-2" />
-                <input placeholder="Address Line 2 (Optional)" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors sm:col-span-2" />
-                <input required placeholder="City" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
-                <input required placeholder="Postal Code" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+                <input
+                  required
+                  name="firstName"
+                  placeholder="First Name"
+                  value={form.firstName}
+                  onChange={handleField}
+                  className={inputClass}
+                />
+                <input
+                  required
+                  name="lastName"
+                  placeholder="Last Name"
+                  value={form.lastName}
+                  onChange={handleField}
+                  className={inputClass}
+                />
+                <input
+                  required
+                  name="address1"
+                  placeholder="Address Line 1"
+                  value={form.address1}
+                  onChange={handleField}
+                  className={`${inputClass} sm:col-span-2`}
+                />
+                <input
+                  name="address2"
+                  placeholder="Address Line 2 (Optional)"
+                  value={form.address2}
+                  onChange={handleField}
+                  className={`${inputClass} sm:col-span-2`}
+                />
+                <input
+                  required
+                  name="city"
+                  placeholder="City"
+                  value={form.city}
+                  onChange={handleField}
+                  className={inputClass}
+                />
+                <input
+                  required
+                  name="postalCode"
+                  placeholder="Postal Code"
+                  value={form.postalCode}
+                  onChange={handleField}
+                  className={inputClass}
+                />
+              </div>
+            </section>
+
+            {/* Contact Info */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-2">
+                <Mail size={20} />
+                <h2 className="text-xl font-black uppercase tracking-tighter">Contact</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative sm:col-span-2">
+                  <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-nike-black/30" />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email (for order confirmation)"
+                    value={form.email}
+                    onChange={handleField}
+                    className={`${inputClass} pl-10`}
+                  />
+                </div>
+                <div className="relative">
+                  <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-nike-black/30" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Phone Number"
+                    value={form.phone}
+                    onChange={handleField}
+                    className={`${inputClass} pl-10`}
+                  />
+                </div>
               </div>
             </section>
 
@@ -101,54 +259,109 @@ const Checkout = () => {
                 {/* Card */}
                 <div
                   onClick={() => setPaymentMethod("card")}
-                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${paymentMethod === "card" ? "border-nike-black" : "border-nike-black/10 hover:border-nike-black/40"}`}
+                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
+                    paymentMethod === "card"
+                      ? "border-nike-black"
+                      : "border-nike-black/10 hover:border-nike-black/40"
+                  }`}
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-6 bg-nike-black rounded flex items-center justify-center text-[8px] text-nike-white font-bold">VISA</div>
-                    <span className="text-sm font-bold uppercase tracking-widest">Credit or Debit Card</span>
+                    <div className="w-10 h-6 bg-nike-black rounded flex items-center justify-center text-[8px] text-nike-white font-bold">
+                      VISA
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest">
+                      Credit or Debit Card
+                    </span>
                   </div>
-                  <div className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${paymentMethod === "card" ? "border-nike-black" : "border-nike-black/20"}`}>
-                    {paymentMethod === "card" && <div className="w-2 h-2 bg-nike-black rounded-full" />}
+                  <div
+                    className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${
+                      paymentMethod === "card" ? "border-nike-black" : "border-nike-black/20"
+                    }`}
+                  >
+                    {paymentMethod === "card" && (
+                      <div className="w-2 h-2 bg-nike-black rounded-full" />
+                    )}
                   </div>
                 </div>
 
                 {/* bKash */}
                 <div
                   onClick={() => setPaymentMethod("bkash")}
-                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/10 hover:border-nike-black/40"}`}
+                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
+                    paymentMethod === "bkash"
+                      ? "border-[#e2136e]"
+                      : "border-nike-black/10 hover:border-nike-black/40"
+                  }`}
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="px-3 py-1 bg-[#e2136e] rounded flex items-center justify-center text-[10px] text-white font-black tracking-widest">bKash</div>
-                    <span className="text-sm font-bold uppercase tracking-widest">Pay with bKash</span>
+                    <div className="px-3 py-1 bg-[#e2136e] rounded flex items-center justify-center text-[10px] text-white font-black tracking-widest">
+                      bKash
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest">
+                      Pay with bKash
+                    </span>
                   </div>
-                  <div className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/20"}`}>
-                    {paymentMethod === "bkash" && <div className="w-2 h-2 bg-[#e2136e] rounded-full" />}
+                  <div
+                    className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${
+                      paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/20"
+                    }`}
+                  >
+                    {paymentMethod === "bkash" && (
+                      <div className="w-2 h-2 bg-[#e2136e] rounded-full" />
+                    )}
                   </div>
                 </div>
 
                 {paymentMethod === "card" ? (
                   <div className="grid grid-cols-1 gap-4 mt-4">
-                    <input required placeholder="Card Number" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+                    <input
+                      placeholder="Card Number"
+                      className={inputClass}
+                    />
                     <div className="grid grid-cols-2 gap-4">
-                      <input required placeholder="MM/YY" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
-                      <input required placeholder="CVV" className="w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors" />
+                      <input placeholder="MM/YY" className={inputClass} />
+                      <input placeholder="CVV" className={inputClass} />
                     </div>
+                    <p className="text-[10px] text-nike-black/40 font-medium uppercase tracking-widest">
+                      🔒 Card details are for demonstration only — no real payment processed.
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 mt-4">
-                    <input required placeholder="bKash Account Number" className="w-full px-6 py-4 border border-[#e2136e]/20 rounded-xl text-sm focus:border-[#e2136e] outline-none transition-colors" />
+                    <input
+                      placeholder="bKash Account Number"
+                      className={`${inputClass} border-[#e2136e]/20 focus:border-[#e2136e]`}
+                    />
+                    <p className="text-[10px] text-nike-black/40 font-medium uppercase tracking-widest">
+                      🔒 bKash details are for demonstration only — no real payment processed.
+                    </p>
                   </div>
                 )}
               </div>
             </section>
 
-            <button type="submit" className="btn-bold w-full bg-nike-black text-nike-white hover:bg-nike-black/80">
-              Place Order
+            {error && (
+              <p className="text-sm text-red-600 font-medium">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting || cart.length === 0}
+              className="btn-bold w-full bg-nike-black text-nike-white hover:bg-nike-black/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Placing Order...
+                </>
+              ) : (
+                "Place Order"
+              )}
             </button>
           </form>
         </div>
 
-        {/* Order Summary */}
+        {/* ── Order Summary ─────────────────────────────────────────────────── */}
         <div className="lg:w-1/3">
           <div className="bg-nike-gray/50 p-8 rounded-2xl space-y-6 sticky top-32">
             <h2 className="text-xl font-black uppercase tracking-tighter">Order Summary</h2>
@@ -156,12 +369,21 @@ const Checkout = () => {
               {cart.map((item) => (
                 <div key={`${item.id}-${item.selectedSize}`} className="flex gap-4">
                   <div className="w-16 h-16 bg-nike-gray rounded overflow-hidden flex-shrink-0">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
                   <div className="flex-grow">
                     <p className="text-xs font-black uppercase tracking-tight">{item.name}</p>
-                    <p className="text-[10px] text-nike-black/60 font-medium uppercase tracking-widest">Qty {item.quantity} | Size {item.selectedSize}</p>
-                    <p className="text-xs font-bold mt-1">৳{(item.price * item.quantity).toLocaleString()}</p>
+                    <p className="text-[10px] text-nike-black/60 font-medium uppercase tracking-widest">
+                      Qty {item.quantity} | Size {item.selectedSize}
+                    </p>
+                    <p className="text-xs font-bold mt-1">
+                      ৳{(item.price * item.quantity).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -173,7 +395,7 @@ const Checkout = () => {
                 <span>৳{cartTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-nike-black/60">Shipping & Tax</span>
+                <span className="text-nike-black/60">Shipping</span>
                 <span>৳{shipping.toLocaleString()}</span>
               </div>
               {discount > 0 && (
@@ -185,7 +407,8 @@ const Checkout = () => {
                   <span className="flex items-center gap-1 normal-case">
                     <Tag size={12} />
                     {appliedVoucher?.code}
-                    {appliedVoucher?.type === "percent" && ` (${appliedVoucher.value}% off)`}
+                    {appliedVoucher?.type === "percent" &&
+                      ` (${appliedVoucher.value}% off)`}
                   </span>
                   <span className="font-black">−৳{discount.toLocaleString()}</span>
                 </motion.div>

@@ -4,6 +4,17 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+  writeBatch,
+  increment,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "./firebase";
 
 export type DiscountType = "percent" | "fixed";
 
@@ -21,7 +32,7 @@ export interface Voucher {
 interface VoucherContextType {
   vouchers: Voucher[];
   appliedVoucher: Voucher | null;
-  discountAmount: number;   // computed discount on current cart total
+  discountAmount: number;
   applyCode: (code: string, cartTotal: number) => { success: boolean; message: string };
   removeApplied: () => void;
   // Admin ops
@@ -31,8 +42,8 @@ interface VoucherContextType {
   incrementUsage: (code: string) => void;
 }
 
-const VOUCHERS_KEY = "vynt-vouchers";
-const APPLIED_KEY  = "vynt-applied-voucher";
+const COLLECTION  = "vouchers";
+const APPLIED_KEY = "vynt-applied-voucher";
 
 const DEFAULT_VOUCHERS: Voucher[] = [
   {
@@ -57,15 +68,6 @@ const DEFAULT_VOUCHERS: Voucher[] = [
   },
 ];
 
-function loadVouchers(): Voucher[] {
-  try {
-    const saved = localStorage.getItem(VOUCHERS_KEY);
-    return saved ? JSON.parse(saved) : DEFAULT_VOUCHERS;
-  } catch {
-    return DEFAULT_VOUCHERS;
-  }
-}
-
 function loadApplied(): Voucher | null {
   try {
     const saved = localStorage.getItem(APPLIED_KEY);
@@ -79,20 +81,50 @@ function computeDiscount(voucher: Voucher, cartTotal: number): number {
   if (voucher.type === "percent") {
     return Math.round((cartTotal * voucher.value) / 100);
   }
-  return Math.min(voucher.value, cartTotal); // fixed can't exceed cart total
+  return Math.min(voucher.value, cartTotal);
 }
 
 const VoucherContext = createContext<VoucherContextType | undefined>(undefined);
 
 export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [vouchers, setVouchers] = useState<Voucher[]>(loadVouchers);
+  const [vouchers, setVouchers] = useState<Voucher[]>(DEFAULT_VOUCHERS);
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(loadApplied);
   const [cartTotalSnapshot, setCartTotalSnapshot] = useState(0);
 
+  // Real-time listener on vouchers collection
   useEffect(() => {
-    localStorage.setItem(VOUCHERS_KEY, JSON.stringify(vouchers));
-  }, [vouchers]);
+    const ref = collection(db, COLLECTION);
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.empty) {
+          seedDefaults();
+          return;
+        }
+        const loaded: Voucher[] = snap.docs.map((d) => d.data() as Voucher);
+        setVouchers(loaded);
+      },
+      (err) => {
+        console.error("[VoucherContext] Firestore error:", err);
+        setVouchers(DEFAULT_VOUCHERS);
+      }
+    );
+    return unsub;
+  }, []);
 
+  const seedDefaults = async () => {
+    try {
+      const batch = writeBatch(db);
+      DEFAULT_VOUCHERS.forEach((v) => {
+        batch.set(doc(db, COLLECTION, v.code), v);
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error("[VoucherContext] Failed to seed defaults:", err);
+    }
+  };
+
+  // Persist applied voucher to localStorage (per-session cart state)
   useEffect(() => {
     if (appliedVoucher) {
       localStorage.setItem(APPLIED_KEY, JSON.stringify(appliedVoucher));
@@ -102,8 +134,7 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [appliedVoucher]);
 
   const applyCode = (code: string, cartTotal: number): { success: boolean; message: string } => {
-    const voucher = vouchers.find(v => v.code.toUpperCase() === code.trim().toUpperCase());
-
+    const voucher = vouchers.find((v) => v.code.toUpperCase() === code.trim().toUpperCase());
     if (!voucher) return { success: false, message: "Invalid voucher code." };
     if (!voucher.active) return { success: false, message: "This voucher is inactive." };
     if (voucher.usageLimit && voucher.usageLimit > 0 && voucher.usedCount >= voucher.usageLimit) {
@@ -112,10 +143,9 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (voucher.minOrder && cartTotal < voucher.minOrder) {
       return {
         success: false,
-        message: `Minimum order of ৳${voucher.minOrder.toLocaleString()} required for this code.`,
+        message: `Minimum order of ৳${voucher.minOrder.toLocaleString()} required.`,
       };
     }
-
     setAppliedVoucher(voucher);
     setCartTotalSnapshot(cartTotal);
     return { success: true, message: "Voucher applied successfully!" };
@@ -123,24 +153,59 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const removeApplied = () => setAppliedVoucher(null);
 
-  const discountAmount = appliedVoucher ? computeDiscount(appliedVoucher, cartTotalSnapshot || appliedVoucher.value) : 0;
+  const discountAmount = appliedVoucher
+    ? computeDiscount(appliedVoucher, cartTotalSnapshot || appliedVoucher.value)
+    : 0;
 
-  const addVoucher = (v: Voucher) => setVouchers(prev => [...prev, v]);
-  const updateVoucher = (v: Voucher) => setVouchers(prev => prev.map(x => x.code === v.code ? v : x));
-  const deleteVoucher = (code: string) => {
-    setVouchers(prev => prev.filter(v => v.code !== code));
-    if (appliedVoucher?.code === code) setAppliedVoucher(null);
+  const addVoucher = async (v: Voucher) => {
+    try {
+      await setDoc(doc(db, COLLECTION, v.code), v);
+    } catch (err) {
+      console.error("[VoucherContext] addVoucher failed:", err);
+    }
   };
-  const incrementUsage = (code: string) => {
-    setVouchers(prev => prev.map(v => v.code === code ? { ...v, usedCount: v.usedCount + 1 } : v));
+
+  const updateVoucher = async (v: Voucher) => {
+    try {
+      await setDoc(doc(db, COLLECTION, v.code), v, { merge: true });
+    } catch (err) {
+      console.error("[VoucherContext] updateVoucher failed:", err);
+    }
+  };
+
+  const deleteVoucher = async (code: string) => {
+    try {
+      await deleteDoc(doc(db, COLLECTION, code));
+      if (appliedVoucher?.code === code) setAppliedVoucher(null);
+    } catch (err) {
+      console.error("[VoucherContext] deleteVoucher failed:", err);
+    }
+  };
+
+  const incrementUsage = async (code: string) => {
+    try {
+      await updateDoc(doc(db, COLLECTION, code), {
+        usedCount: increment(1),
+      });
+    } catch (err) {
+      console.error("[VoucherContext] incrementUsage failed:", err);
+    }
   };
 
   return (
-    <VoucherContext.Provider value={{
-      vouchers, appliedVoucher, discountAmount,
-      applyCode, removeApplied,
-      addVoucher, updateVoucher, deleteVoucher, incrementUsage,
-    }}>
+    <VoucherContext.Provider
+      value={{
+        vouchers,
+        appliedVoucher,
+        discountAmount,
+        applyCode,
+        removeApplied,
+        addVoucher,
+        updateVoucher,
+        deleteVoucher,
+        incrementUsage,
+      }}
+    >
       {children}
     </VoucherContext.Provider>
   );

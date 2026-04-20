@@ -4,100 +4,123 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+  writeBatch,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "./firebase";
 import { Product } from "./types";
 import { PRODUCTS as DEFAULT_PRODUCTS } from "./constants";
 
 interface ProductContextType {
   products: Product[];
+  loading: boolean;
   addProduct: (product: Product) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
-  resetToDefaults: () => void;
+  resetToDefaults: () => Promise<void>;
 }
-
-const STORAGE_KEY = "vynt-custom-products";
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
+const COLLECTION = "products";
+
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [customProducts, setCustomProducts] = useState<Product[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
+  const [loading, setLoading] = useState(true);
+  const [firestoreOk, setFirestoreOk] = useState(true);
 
-  // Merged: default products updated by any edits, plus new custom ones
-  const [overrides, setOverrides] = useState<Record<string, Product>>(() => {
-    try {
-      const saved = localStorage.getItem("vynt-product-overrides");
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem("vynt-deleted-ids");
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
-
+  // Real-time listener on the products collection
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(customProducts));
-  }, [customProducts]);
+    const ref = collection(db, COLLECTION);
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.empty) {
+          // First run — Firestore is empty, seed with defaults
+          seedDefaults();
+          return;
+        }
+        const loaded: Product[] = snap.docs.map((d) => d.data() as Product);
+        // Sort by a stable order field if present, otherwise by name
+        loaded.sort((a, b) => a.name.localeCompare(b.name));
+        setProducts(loaded);
+        setLoading(false);
+        setFirestoreOk(true);
+      },
+      (err) => {
+        console.error("[ProductContext] Firestore error:", err);
+        // Fall back to hardcoded defaults so the store still works
+        setProducts(DEFAULT_PRODUCTS);
+        setLoading(false);
+        setFirestoreOk(false);
+      }
+    );
+    return unsub;
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("vynt-product-overrides", JSON.stringify(overrides));
-  }, [overrides]);
-
-  useEffect(() => {
-    localStorage.setItem("vynt-deleted-ids", JSON.stringify([...deletedIds]));
-  }, [deletedIds]);
-
-  // Build final product list: default (with overrides applied, minus deleted) + custom
-  const products: Product[] = [
-    ...DEFAULT_PRODUCTS
-      .filter(p => !deletedIds.has(p.id))
-      .map(p => overrides[p.id] ?? p),
-    ...customProducts.filter(p => !deletedIds.has(p.id)),
-  ];
-
-  const addProduct = (product: Product) => {
-    setCustomProducts(prev => [...prev, product]);
-  };
-
-  const updateProduct = (product: Product) => {
-    // Check if it's a default product
-    const isDefault = DEFAULT_PRODUCTS.some(p => p.id === product.id);
-    if (isDefault) {
-      setOverrides(prev => ({ ...prev, [product.id]: product }));
-    } else {
-      setCustomProducts(prev => prev.map(p => p.id === product.id ? product : p));
+  const seedDefaults = async () => {
+    try {
+      const batch = writeBatch(db);
+      DEFAULT_PRODUCTS.forEach((p) => {
+        batch.set(doc(db, COLLECTION, p.id), p);
+      });
+      await batch.commit();
+      // onSnapshot will fire again with the seeded data
+    } catch (err) {
+      console.error("[ProductContext] Failed to seed defaults:", err);
+      setProducts(DEFAULT_PRODUCTS);
+      setLoading(false);
     }
   };
 
-  const deleteProduct = (id: string) => {
-    setDeletedIds(prev => new Set([...prev, id]));
-    setCustomProducts(prev => prev.filter(p => p.id !== id));
+  const addProduct = async (product: Product) => {
+    try {
+      await setDoc(doc(db, COLLECTION, product.id), product);
+    } catch (err) {
+      console.error("[ProductContext] addProduct failed:", err);
+    }
   };
 
-  const resetToDefaults = () => {
-    setCustomProducts([]);
-    setOverrides({});
-    setDeletedIds(new Set());
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem("vynt-product-overrides");
-    localStorage.removeItem("vynt-deleted-ids");
+  const updateProduct = async (product: Product) => {
+    try {
+      await setDoc(doc(db, COLLECTION, product.id), product, { merge: true });
+    } catch (err) {
+      console.error("[ProductContext] updateProduct failed:", err);
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, COLLECTION, id));
+    } catch (err) {
+      console.error("[ProductContext] deleteProduct failed:", err);
+    }
+  };
+
+  const resetToDefaults = async () => {
+    try {
+      // Delete all current docs then re-seed
+      const batch = writeBatch(db);
+      products.forEach((p) => {
+        batch.delete(doc(db, COLLECTION, p.id));
+      });
+      DEFAULT_PRODUCTS.forEach((p) => {
+        batch.set(doc(db, COLLECTION, p.id), p);
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error("[ProductContext] resetToDefaults failed:", err);
+    }
   };
 
   return (
-    <ProductContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, resetToDefaults }}>
+    <ProductContext.Provider value={{ products, loading, addProduct, updateProduct, deleteProduct, resetToDefaults }}>
       {children}
     </ProductContext.Provider>
   );

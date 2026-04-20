@@ -12,6 +12,7 @@ import { ProductProvider } from "./ProductContext";
 import { AdminProvider } from "./AdminContext";
 import { VoucherProvider } from "./VoucherContext";
 import ScrollToTop from "./components/ScrollToTop";
+import { OrderProvider } from "./OrderContext";
 
 // Lazy load pages
 const Home = lazy(() => import("./pages/Home"));
@@ -177,6 +178,7 @@ export default function App() {
       <FavouriteProvider>
         <ProductProvider>
           <VoucherProvider>
+            <OrderProvider>
             <CartProvider>
               <Router>
               <ScrollToTop />
@@ -214,6 +216,7 @@ export default function App() {
             </div>
               </Router>
             </CartProvider>
+            </OrderProvider>
           </VoucherProvider>
         </ProductProvider>
       </FavouriteProvider>
