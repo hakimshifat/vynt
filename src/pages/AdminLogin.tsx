@@ -24,19 +24,18 @@ const AdminLogin: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    // crypto.subtle only works on HTTPS
-    if (!crypto?.subtle?.digest) {
-      setError("Login unavailable: site must be accessed over HTTPS.");
-      return;
-    }
-    const success = await login(password);
-    if (success) {
-      navigate("/admin");
-    } else {
-      setError("Incorrect password. Access denied.");
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-      setPassword("");
+    try {
+      const success = await login(password);
+      if (success) {
+        navigate("/admin");
+      } else {
+        setError("Incorrect password. Access denied.");
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+        setPassword("");
+      }
+    } catch {
+      setError("Login failed. Make sure you're on the live site (HTTPS).");
     }
   };
 
