@@ -34,14 +34,8 @@ const AdminLogin: React.FC = () => {
         setTimeout(() => setIsShaking(false), 500);
         setPassword("");
       }
-    } catch (err: any) {
-      if (err.message === "INSECURE_CONTEXT") {
-        setError("Network Error: Login only works on HTTPS or 'localhost' due to browser security restrictions.");
-        setIsShaking(true);
-        setTimeout(() => setIsShaking(false), 500);
-      } else {
-        setError("Incorrect password. Access denied.");
-      }
+    } catch {
+      setError("Incorrect password. Access denied.");
     }
   };
 

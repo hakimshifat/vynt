@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useState } from "react";
+import { sha256 } from "js-sha256";
 
 interface AdminContextType {
   isAdmin: boolean;
@@ -18,16 +19,7 @@ const ADMIN_HASH = "ba7d7ca2efe6812edb819e69db981e4e9a1e9a4231e244fcb72c9922ef0e
 
 const SESSION_KEY = "vynt-admin-session";
 
-async function sha256(text: string): Promise<string> {
-  if (!crypto?.subtle?.digest) {
-    throw new Error("INSECURE_CONTEXT");
-  }
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
+// Replaced with js-sha256 library
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -36,17 +28,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const login = async (password: string): Promise<boolean> => {
     try {
-      const hash = await sha256(password);
+      const hash = sha256(password);
       if (hash === ADMIN_HASH) {
         setIsAdmin(true);
         localStorage.setItem(SESSION_KEY, "true");
         return true;
       }
       return false;
-    } catch (err: any) {
-      if (err.message === "INSECURE_CONTEXT") {
-        throw err;
-      }
+    } catch {
       return false;
     }
   };
