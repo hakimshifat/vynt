@@ -39,7 +39,8 @@ export interface Order {
   shipping: number;
   discount: number;
   total: number;
-  paymentMethod: "card" | "bkash";
+  paymentMethod: "bkash";
+  transactionId?: string;  // bKash transaction code submitted by customer
   voucherCode?: string;
   status: OrderStatus;
 }

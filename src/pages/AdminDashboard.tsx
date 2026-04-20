@@ -753,6 +753,12 @@ const OrdersPanel: React.FC = () => {
                             <div className="flex justify-between"><span>Shipping</span><span>৳{order.shipping.toLocaleString()}</span></div>
                             {order.discount > 0 && <div className="flex justify-between text-green-400"><span>{order.voucherCode}</span><span>−৳{order.discount.toLocaleString()}</span></div>}
                             <div className="flex justify-between font-black text-white pt-1 border-t border-white/10"><span>Total</span><span>৳{order.total.toLocaleString()}</span></div>
+                            {order.transactionId && (
+                              <div className="pt-2 mt-2 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-[10px] uppercase tracking-widest text-[#e2136e] font-black">bKash TxID</span>
+                                <span className="font-mono text-[#e2136e] text-xs font-bold bg-[#e2136e]/10 px-1.5 py-0.5 rounded">{order.transactionId}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

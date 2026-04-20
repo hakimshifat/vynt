@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
-  CreditCard,
   Truck,
   ShieldCheck,
   Tag,
@@ -10,11 +9,20 @@ import {
   Mail,
   MapPin,
   Loader2,
+  Copy,
+  Check,
+  MessageCircle,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "../CartContext";
 import { useVouchers } from "../VoucherContext";
 import { useOrders } from "../OrderContext";
+
+// ─── EDIT THESE TO UPDATE YOUR BKASH INFO ────────────────────────────────────
+const BKASH_NUMBER    = "01XXXXXXXXX";   // TODO: replace with your bKash number
+const CONTACT_PHONE   = "01XXXXXXXXX";   // TODO: replace with your phone for calls
+const CONTACT_WHATSAPP = "880XXXXXXXXX"; // TODO: replace with your WhatsApp number (no +)
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface FormState {
   firstName: string;
@@ -25,18 +33,17 @@ interface FormState {
   address2: string;
   city: string;
   postalCode: string;
+  transactionId: string;
 }
 
 const EMPTY_FORM: FormState = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  address1: "",
-  address2: "",
-  city: "",
-  postalCode: "",
+  firstName: "", lastName: "", email: "", phone: "",
+  address1: "", address2: "", city: "", postalCode: "",
+  transactionId: "",
 };
+
+const inputClass =
+  "w-full px-5 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-[#e2136e] outline-none transition-colors bg-white";
 
 const Checkout = () => {
   const { cart, cartTotal, clearCart } = useCart();
@@ -45,10 +52,10 @@ const Checkout = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "bkash">("card");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const shipping = 2000;
   const discount = appliedVoucher
@@ -60,14 +67,24 @@ const Checkout = () => {
 
   const handleField = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm(f => ({ ...f, [name]: value }));
+  };
+
+  const copyNumber = () => {
+    navigator.clipboard.writeText(BKASH_NUMBER).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!form.transactionId.trim()) {
+      setError("Please enter your bKash Transaction ID before submitting.");
+      return;
+    }
     setIsSubmitting(true);
-
     try {
       const id = await placeOrder({
         customer: {
@@ -85,7 +102,8 @@ const Checkout = () => {
         shipping,
         discount,
         total,
-        paymentMethod,
+        paymentMethod: "bkash",
+        transactionId: form.transactionId.trim(),
         voucherCode: appliedVoucher?.code,
       });
 
@@ -95,10 +113,7 @@ const Checkout = () => {
       }
 
       setOrderId(id);
-      setTimeout(() => {
-        clearCart();
-        navigate("/");
-      }, 4000);
+      setTimeout(() => { clearCart(); navigate("/"); }, 5000);
     } catch (err) {
       console.error(err);
       setError("Something went wrong placing your order. Please try again.");
@@ -107,321 +122,242 @@ const Checkout = () => {
     }
   };
 
-  // ── Success Screen ────────────────────────────────────────────────────────────
+  // ── Success Screen ─────────────────────────────────────────────────────────
   if (orderId) {
     return (
-      <div className="h-[80vh] flex flex-col items-center justify-center space-y-6 text-center px-4">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", damping: 12 }}
-        >
-          <CheckCircle size={80} className="text-nike-accent bg-nike-black rounded-full p-2" />
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-6 text-center px-4">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 12 }}>
+          <div className="w-24 h-24 bg-[#e2136e] rounded-full flex items-center justify-center shadow-2xl shadow-[#e2136e]/40">
+            <CheckCircle size={48} className="text-white" />
+          </div>
         </motion.div>
-        <h1 className="text-4xl font-black uppercase tracking-tighter">Order Placed!</h1>
-        <p className="text-sm font-medium text-nike-black/60 uppercase tracking-widest max-w-md">
-          Thank you for your purchase.
-        </p>
-        <p className="text-xs font-mono bg-nike-gray px-4 py-2 rounded-lg">
-          Order ID: <strong>{orderId}</strong>
-        </p>
-        <p className="text-xs font-bold uppercase tracking-widest animate-pulse">
-          Redirecting to home...
-        </p>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
+          <h1 className="text-4xl font-black uppercase tracking-tighter">Order Confirmed!</h1>
+          <p className="text-sm font-medium text-nike-black/60 uppercase tracking-widest max-w-sm">
+            We've received your order. We'll confirm your bKash payment and reach out shortly.
+          </p>
+          <p className="text-xs font-mono bg-[#e2136e]/8 border border-[#e2136e]/20 px-5 py-3 rounded-xl inline-block">
+            Order ID: <strong>{orderId}</strong>
+          </p>
+          <p className="text-xs text-nike-black/40 font-bold uppercase tracking-widest animate-pulse">
+            Redirecting to home…
+          </p>
+        </motion.div>
       </div>
     );
   }
-
-  const inputClass =
-    "w-full px-6 py-4 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-black uppercase tracking-tighter mb-12">Checkout</h1>
 
-      <div className="flex flex-col lg:flex-row gap-16">
-        {/* ── Form ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row gap-12">
+        {/* ── Form ────────────────────────────────────────────────────────── */}
         <div className="lg:w-2/3">
-          <form onSubmit={handlePlaceOrder} className="space-y-12">
+          <form onSubmit={handlePlaceOrder} className="space-y-10">
 
-            {/* Delivery Options */}
-            <section className="space-y-6">
-              <div className="flex items-center space-x-2">
-                <Truck size={20} />
-                <h2 className="text-xl font-black uppercase tracking-tighter">Delivery Options</h2>
+            {/* Delivery */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Truck size={18} />
+                <h2 className="text-lg font-black uppercase tracking-tighter">Delivery</h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-6 border-2 border-nike-black rounded-xl space-y-2">
+              <div className="p-5 border-2 border-nike-black/10 rounded-xl bg-nike-gray/30 flex items-center justify-between">
+                <div>
                   <p className="text-sm font-black uppercase tracking-widest">Standard Delivery</p>
-                  <p className="text-xs text-nike-black/60 font-medium uppercase tracking-widest">
-                    ৳2,000 | 3-5 Business Days
+                  <p className="text-xs text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                    ৳2,000 · 3–5 Business Days · Nationwide
                   </p>
+                </div>
+                <div className="w-5 h-5 bg-nike-black rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
                 </div>
               </div>
             </section>
 
             {/* Shipping Address */}
-            <section className="space-y-6">
+            <section className="space-y-4">
               <div className="flex items-center gap-2">
-                <MapPin size={20} />
-                <h2 className="text-xl font-black uppercase tracking-tighter">Shipping Address</h2>
+                <MapPin size={18} />
+                <h2 className="text-lg font-black uppercase tracking-tighter">Shipping Address</h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input
-                  required
-                  name="firstName"
-                  placeholder="First Name"
-                  value={form.firstName}
-                  onChange={handleField}
-                  className={inputClass}
-                />
-                <input
-                  required
-                  name="lastName"
-                  placeholder="Last Name"
-                  value={form.lastName}
-                  onChange={handleField}
-                  className={inputClass}
-                />
-                <input
-                  required
-                  name="address1"
-                  placeholder="Address Line 1"
-                  value={form.address1}
-                  onChange={handleField}
-                  className={`${inputClass} sm:col-span-2`}
-                />
-                <input
-                  name="address2"
-                  placeholder="Address Line 2 (Optional)"
-                  value={form.address2}
-                  onChange={handleField}
-                  className={`${inputClass} sm:col-span-2`}
-                />
-                <input
-                  required
-                  name="city"
-                  placeholder="City"
-                  value={form.city}
-                  onChange={handleField}
-                  className={inputClass}
-                />
-                <input
-                  required
-                  name="postalCode"
-                  placeholder="Postal Code"
-                  value={form.postalCode}
-                  onChange={handleField}
-                  className={inputClass}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input required name="firstName" placeholder="First Name" value={form.firstName} onChange={handleField} className={inputClass} />
+                <input required name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleField} className={inputClass} />
+                <input required name="address1" placeholder="House / Road / Area" value={form.address1} onChange={handleField} className={`${inputClass} sm:col-span-2`} />
+                <input name="address2" placeholder="Apartment / Landmark (Optional)" value={form.address2} onChange={handleField} className={`${inputClass} sm:col-span-2`} />
+                <input required name="city" placeholder="City / District" value={form.city} onChange={handleField} className={inputClass} />
+                <input required name="postalCode" placeholder="Postal Code" value={form.postalCode} onChange={handleField} className={inputClass} />
               </div>
             </section>
 
-            {/* Contact Info */}
-            <section className="space-y-6">
+            {/* Contact */}
+            <section className="space-y-4">
               <div className="flex items-center gap-2">
-                <Mail size={20} />
-                <h2 className="text-xl font-black uppercase tracking-tighter">Contact</h2>
+                <Phone size={18} />
+                <h2 className="text-lg font-black uppercase tracking-tighter">Contact</h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="relative sm:col-span-2">
                   <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-nike-black/30" />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Email (for order confirmation)"
-                    value={form.email}
-                    onChange={handleField}
-                    className={`${inputClass} pl-10`}
-                  />
+                  <input type="email" name="email" placeholder="Email (optional)" value={form.email} onChange={handleField} className={`${inputClass} pl-10`} />
                 </div>
-                <div className="relative">
+                <div className="relative sm:col-span-2">
                   <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-nike-black/30" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="Phone Number"
-                    value={form.phone}
-                    onChange={handleField}
-                    className={`${inputClass} pl-10`}
-                  />
+                  <input required type="tel" name="phone" placeholder="Phone number (for delivery)" value={form.phone} onChange={handleField} className={`${inputClass} pl-10`} />
                 </div>
               </div>
             </section>
 
-            {/* Payment */}
-            <section className="space-y-6">
-              <div className="flex items-center space-x-2">
-                <CreditCard size={20} />
-                <h2 className="text-xl font-black uppercase tracking-tighter">Payment</h2>
+            {/* bKash Payment */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded bg-[#e2136e] flex items-center justify-center">
+                  <span className="text-[8px] text-white font-black">b</span>
+                </div>
+                <h2 className="text-lg font-black uppercase tracking-tighter">bKash Payment</h2>
               </div>
-              <div className="space-y-4">
-                {/* Card */}
-                <div
-                  onClick={() => setPaymentMethod("card")}
-                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
-                    paymentMethod === "card"
-                      ? "border-nike-black"
-                      : "border-nike-black/10 hover:border-nike-black/40"
-                  }`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-6 bg-nike-black rounded flex items-center justify-center text-[8px] text-nike-white font-bold">
-                      VISA
-                    </div>
-                    <span className="text-sm font-bold uppercase tracking-widest">
-                      Credit or Debit Card
-                    </span>
-                  </div>
-                  <div
-                    className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${
-                      paymentMethod === "card" ? "border-nike-black" : "border-nike-black/20"
-                    }`}
-                  >
-                    {paymentMethod === "card" && (
-                      <div className="w-2 h-2 bg-nike-black rounded-full" />
-                    )}
-                  </div>
-                </div>
 
-                {/* bKash */}
-                <div
-                  onClick={() => setPaymentMethod("bkash")}
-                  className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
-                    paymentMethod === "bkash"
-                      ? "border-[#e2136e]"
-                      : "border-nike-black/10 hover:border-nike-black/40"
-                  }`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="px-3 py-1 bg-[#e2136e] rounded flex items-center justify-center text-[10px] text-white font-black tracking-widest">
-                      bKash
-                    </div>
-                    <span className="text-sm font-bold uppercase tracking-widest">
-                      Pay with bKash
-                    </span>
-                  </div>
-                  <div
-                    className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${
-                      paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/20"
-                    }`}
-                  >
-                    {paymentMethod === "bkash" && (
-                      <div className="w-2 h-2 bg-[#e2136e] rounded-full" />
-                    )}
-                  </div>
+              {/* Instructions card */}
+              <div className="bg-[#fff0f6] border border-[#e2136e]/20 rounded-2xl overflow-hidden">
+                <div className="bg-[#e2136e] px-5 py-3 flex items-center gap-2">
+                  <span className="text-white font-black text-sm tracking-wide">How to Pay</span>
                 </div>
+                <div className="p-5 space-y-4">
+                  <ol className="space-y-3 text-sm text-nike-black/80">
+                    <li className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">1</span>
+                      <span>Open your <strong>bKash app</strong> and tap <strong>Send Money</strong></span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">2</span>
+                      <div>
+                        <span>Send <strong>৳{total.toLocaleString()}</strong> to our bKash number:</span>
+                        <div className="mt-2 flex items-center gap-3">
+                          <div className="flex-1 bg-white border-2 border-[#e2136e]/30 rounded-xl px-4 py-3 font-mono font-black text-base text-[#e2136e] tracking-widest select-all">
+                            {BKASH_NUMBER}
+                          </div>
+                          <button type="button" onClick={copyNumber}
+                            className="flex items-center gap-1.5 px-4 py-3 bg-[#e2136e] hover:bg-[#c4115f] text-white text-xs font-black rounded-xl transition-colors shrink-0">
+                            {copied ? <Check size={14} /> : <Copy size={14} />}
+                            {copied ? "Copied!" : "Copy"}
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">3</span>
+                      <span>Write your <strong>Order total amount</strong> in the reference if prompted</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">4</span>
+                      <span>Copy the <strong>Transaction ID</strong> from your confirmation SMS and paste it below</span>
+                    </li>
+                  </ol>
 
-                {paymentMethod === "card" ? (
-                  <div className="grid grid-cols-1 gap-4 mt-4">
+                  {/* Transaction ID Input */}
+                  <div className="space-y-2 pt-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-[#e2136e]">
+                      bKash Transaction ID *
+                    </label>
                     <input
-                      placeholder="Card Number"
-                      className={inputClass}
+                      required
+                      name="transactionId"
+                      placeholder="e.g. 8K3B2L9XYZ"
+                      value={form.transactionId}
+                      onChange={handleField}
+                      className="w-full px-5 py-4 border-2 border-[#e2136e]/30 rounded-xl text-sm font-mono focus:border-[#e2136e] outline-none transition-colors bg-white placeholder-nike-black/20 uppercase"
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                      <input placeholder="MM/YY" className={inputClass} />
-                      <input placeholder="CVV" className={inputClass} />
-                    </div>
-                    <p className="text-[10px] text-nike-black/40 font-medium uppercase tracking-widest">
-                      🔒 Card details are for demonstration only — no real payment processed.
+                    <p className="text-[11px] text-nike-black/40 font-medium">
+                      Found in your bKash SMS confirmation after sending payment.
                     </p>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 mt-4">
-                    <input
-                      placeholder="bKash Account Number"
-                      className={`${inputClass} border-[#e2136e]/20 focus:border-[#e2136e]`}
-                    />
-                    <p className="text-[10px] text-nike-black/40 font-medium uppercase tracking-widest">
-                      🔒 bKash details are for demonstration only — no real payment processed.
-                    </p>
-                  </div>
-                )}
+                </div>
+              </div>
+
+              {/* Alternative: Call us */}
+              <div className="bg-nike-gray/40 border border-nike-black/8 rounded-2xl p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-nike-black/50 mb-3">Prefer to order by phone?</p>
+                <div className="flex flex-wrap gap-3">
+                  <a href={`tel:${CONTACT_PHONE}`}
+                    className="flex items-center gap-2 px-5 py-3 bg-nike-black text-white rounded-xl text-sm font-black uppercase tracking-wider hover:bg-nike-black/80 transition-colors">
+                    <Phone size={15} /> Call Us
+                  </a>
+                  <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-5 py-3 bg-[#25D366] text-white rounded-xl text-sm font-black uppercase tracking-wider hover:bg-[#1ebe5d] transition-colors">
+                    <MessageCircle size={15} /> WhatsApp
+                  </a>
+                </div>
+                <p className="text-[11px] text-nike-black/35 font-medium mt-3">
+                  Call or message us directly and we'll take your order over the phone.
+                </p>
               </div>
             </section>
 
             {error && (
-              <p className="text-sm text-red-600 font-medium">{error}</p>
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting || cart.length === 0}
-              className="btn-bold w-full bg-nike-black text-nike-white hover:bg-nike-black/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
+            <button type="submit" disabled={isSubmitting || cart.length === 0}
+              className="btn-bold w-full bg-[#e2136e] text-white hover:bg-[#c4115f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#e2136e]/30">
               {isSubmitting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Placing Order...
-                </>
+                <><Loader2 size={18} className="animate-spin" /> Placing Order…</>
               ) : (
-                "Place Order"
+                "Confirm Order"
               )}
             </button>
           </form>
         </div>
 
-        {/* ── Order Summary ─────────────────────────────────────────────────── */}
+        {/* ── Order Summary ──────────────────────────────────────────────── */}
         <div className="lg:w-1/3">
-          <div className="bg-nike-gray/50 p-8 rounded-2xl space-y-6 sticky top-32">
-            <h2 className="text-xl font-black uppercase tracking-tighter">Order Summary</h2>
-            <div className="space-y-4">
-              {cart.map((item) => (
-                <div key={`${item.id}-${item.selectedSize}`} className="flex gap-4">
-                  <div className="w-16 h-16 bg-nike-gray rounded overflow-hidden flex-shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
+          <div className="bg-nike-gray/40 p-7 rounded-2xl space-y-5 sticky top-32 border border-nike-black/6">
+            <h2 className="text-lg font-black uppercase tracking-tighter">Order Summary</h2>
+
+            <div className="space-y-3">
+              {cart.map(item => (
+                <div key={`${item.id}-${item.selectedSize}`} className="flex gap-3">
+                  <div className="w-14 h-14 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
-                  <div className="flex-grow">
-                    <p className="text-xs font-black uppercase tracking-tight">{item.name}</p>
-                    <p className="text-[10px] text-nike-black/60 font-medium uppercase tracking-widest">
-                      Qty {item.quantity} | Size {item.selectedSize}
+                  <div className="flex-grow py-0.5">
+                    <p className="text-xs font-black uppercase tracking-tight leading-tight">{item.name}</p>
+                    <p className="text-[10px] text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      Qty {item.quantity} · Size {item.selectedSize}
                     </p>
-                    <p className="text-xs font-bold mt-1">
-                      ৳{(item.price * item.quantity).toLocaleString()}
-                    </p>
+                    <p className="text-xs font-black mt-1">৳{(item.price * item.quantity).toLocaleString()}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-6 border-t border-nike-black/10 space-y-2 text-sm font-medium uppercase tracking-widest">
-              <div className="flex justify-between">
-                <span className="text-nike-black/60">Subtotal</span>
-                <span>৳{cartTotal.toLocaleString()}</span>
+            <div className="pt-4 border-t border-nike-black/8 space-y-2 text-sm font-medium">
+              <div className="flex justify-between text-nike-black/60 uppercase tracking-widest">
+                <span>Subtotal</span><span className="text-nike-black">৳{cartTotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-nike-black/60">Shipping</span>
-                <span>৳{shipping.toLocaleString()}</span>
+              <div className="flex justify-between text-nike-black/60 uppercase tracking-widest">
+                <span>Shipping</span><span className="text-nike-black">৳{shipping.toLocaleString()}</span>
               </div>
-              {discount > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-between text-green-700"
-                >
-                  <span className="flex items-center gap-1 normal-case">
-                    <Tag size={12} />
-                    {appliedVoucher?.code}
-                    {appliedVoucher?.type === "percent" &&
-                      ` (${appliedVoucher.value}% off)`}
-                  </span>
-                  <span className="font-black">−৳{discount.toLocaleString()}</span>
-                </motion.div>
-              )}
-              <div className="pt-4 border-t border-nike-black/10 flex justify-between text-lg font-black">
+              <AnimatePresence>
+                {discount > 0 && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                    className="flex justify-between text-green-700 uppercase tracking-widest">
+                    <span className="flex items-center gap-1"><Tag size={11} /> {appliedVoucher?.code}</span>
+                    <span className="font-black">−৳{discount.toLocaleString()}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="pt-3 border-t border-nike-black/8 flex justify-between text-base font-black">
                 <span>Total</span>
-                <span>৳{total.toLocaleString()}</span>
+                <span className="text-[#e2136e]">৳{total.toLocaleString()}</span>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 text-[10px] text-nike-black/40 font-bold uppercase tracking-widest">
-              <ShieldCheck size={14} />
-              <span>Secure Checkout</span>
+            <div className="flex items-center gap-2 text-[10px] text-nike-black/35 font-bold uppercase tracking-widest pt-1">
+              <ShieldCheck size={13} />
+              <span>bKash · Secure Checkout</span>
             </div>
           </div>
         </div>

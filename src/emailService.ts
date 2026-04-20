@@ -40,7 +40,8 @@ export async function sendOrderNotification(order: Order): Promise<void> {
     ]
       .filter(Boolean)
       .join(", "),
-    payment_method: order.paymentMethod === "bkash" ? "bKash" : "Card",
+    payment_method: "bKash",
+    transaction_id: order.transactionId ?? "Not provided",
     voucher_code:   order.voucherCode ?? "None",
     items_list:     itemsList,
     subtotal:       `৳${order.subtotal.toLocaleString()}`,
