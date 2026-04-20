@@ -32,13 +32,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const login = async (password: string): Promise<boolean> => {
-    const hash = await sha256(password);
-    if (hash === ADMIN_HASH) {
-      setIsAdmin(true);
-      localStorage.setItem(SESSION_KEY, "true");
-      return true;
+    try {
+      const hash = await sha256(password);
+      if (hash === ADMIN_HASH) {
+        setIsAdmin(true);
+        localStorage.setItem(SESSION_KEY, "true");
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {

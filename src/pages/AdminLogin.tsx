@@ -35,7 +35,7 @@ const AdminLogin: React.FC = () => {
         setPassword("");
       }
     } catch {
-      setError("Login failed. Make sure you're on the live site (HTTPS).");
+      setError("Incorrect password. Access denied.");
     }
   };
 
