@@ -86,14 +86,11 @@ const Checkout = () => {
     }
     setIsSubmitting(true);
     try {
-      const id = await placeOrder({
+      const orderPayload: any = {
         customer: {
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
-          email: form.email.trim() || undefined,
-          phone: form.phone.trim() || undefined,
           address1: form.address1.trim(),
-          address2: form.address2.trim() || undefined,
           city: form.city.trim(),
           postalCode: form.postalCode.trim(),
         },
@@ -104,8 +101,14 @@ const Checkout = () => {
         total,
         paymentMethod: "bkash",
         transactionId: form.transactionId.trim(),
-        voucherCode: appliedVoucher?.code,
-      });
+      };
+
+      if (form.email.trim()) orderPayload.customer.email = form.email.trim();
+      if (form.phone.trim()) orderPayload.customer.phone = form.phone.trim();
+      if (form.address2.trim()) orderPayload.customer.address2 = form.address2.trim();
+      if (appliedVoucher?.code) orderPayload.voucherCode = appliedVoucher.code;
+
+      const id = await placeOrder(orderPayload);
 
       if (appliedVoucher) {
         incrementUsage(appliedVoucher.code);
