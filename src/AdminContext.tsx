@@ -14,12 +14,18 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 // SHA-256 of "Admin@Vynt2024"
-// Generated with: echo -n "Admin@Vynt2024" | sha256sum
-const ADMIN_HASH = "44ee375b196d3146f38f3073c965a5988cec79a0338a382dcd1279e15879a9b3";
+// Verified with: echo -n "Admin@Vynt2024" | sha256sum
+const ADMIN_HASH = "ba7d7ca2efe6812edb819e69db981e4e9a1e9a4231e244fcb72c9922ef0e6186";
 
 const SESSION_KEY = "vynt-admin-session";
 
 async function sha256(text: string): Promise<string> {
+  if (!crypto?.subtle?.digest) {
+    // crypto.subtle is only available on HTTPS. Fallback should never be
+    // reached on a properly deployed site — surface a clear error.
+    console.error("[AdminContext] crypto.subtle unavailable. Site must be served over HTTPS.");
+    return "";
+  }
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);

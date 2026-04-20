@@ -24,6 +24,11 @@ const AdminLogin: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    // crypto.subtle only works on HTTPS
+    if (!crypto?.subtle?.digest) {
+      setError("Login unavailable: site must be accessed over HTTPS.");
+      return;
+    }
     const success = await login(password);
     if (success) {
       navigate("/admin");
