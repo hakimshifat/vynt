@@ -79,26 +79,27 @@ const Home = () => {
       </section>
 
       {/* Full Width Banner */}
-      <section className="relative h-[60vh] overflow-hidden group cursor-pointer">
+      <section className="relative h-[60vh] overflow-hidden group cursor-pointer bg-black">
         <img
-          src="https://images.unsplash.com/photo-1514444917591-1aa748c18b3a?auto=format&fit=crop&q=80&w=2000"
+          src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=2000"
           alt="Banner"
-          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80"
           referrerPolicy="no-referrer"
+          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-nike-black/80 via-transparent to-transparent flex flex-col justify-end p-8 sm:p-16 space-y-4">
-          <h2 className="text-nike-white text-4xl sm:text-6xl font-black uppercase tracking-tighter leading-none">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-8 sm:p-16 space-y-4">
+          <h2 className="text-white text-4xl sm:text-6xl font-black uppercase tracking-tighter leading-none">
             Jordan <br /> Essentials
           </h2>
-          <p className="text-nike-white/80 text-sm font-medium uppercase tracking-widest">
+          <p className="text-white/70 text-sm font-medium uppercase tracking-widest">
             The season's must-have styles.
           </p>
           <div>
             <Link
               to="/shop"
-              className="inline-block bg-nike-white text-nike-black px-8 py-3 rounded-full font-bold uppercase tracking-widest hover:bg-nike-accent transition-colors"
+              className="inline-block bg-white text-black px-8 py-3 rounded-full font-bold uppercase tracking-widest hover:bg-nike-accent transition-colors"
             >
-              Shop Jordan
+              Shop Now
             </Link>
           </div>
         </div>
