@@ -1,11 +1,36 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, Tag, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "../CartContext";
+import { useVouchers } from "../VoucherContext";
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
+  const { appliedVoucher, discountAmount, applyCode, removeApplied } = useVouchers();
+
+  const [codeInput, setCodeInput] = useState("");
+  const [voucherMsg, setVoucherMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [applying, setApplying] = useState(false);
+
+  const shipping = 800;
+  const tax = 1200;
+  const discount = appliedVoucher
+    ? (appliedVoucher.type === "percent"
+        ? Math.round((cartTotal * appliedVoucher.value) / 100)
+        : Math.min(appliedVoucher.value, cartTotal))
+    : 0;
+  const finalTotal = cartTotal + shipping + tax - discount;
+
+  const handleApply = () => {
+    if (!codeInput.trim()) return;
+    setApplying(true);
+    const result = applyCode(codeInput, cartTotal);
+    setVoucherMsg({ text: result.message, ok: result.success });
+    if (result.success) setCodeInput("");
+    setApplying(false);
+    setTimeout(() => setVoucherMsg(null), 4000);
+  };
 
   if (cart.length === 0) {
     return (
@@ -52,24 +77,24 @@ const Cart = () => {
                   <p className="text-xs sm:text-sm text-nike-black/60 font-medium uppercase tracking-widest">
                     Size: {item.selectedSize} | Color: {item.selectedColor}
                   </p>
-                  
+
                   <div className="flex items-center justify-between pt-4">
                     <div className="flex items-center border border-nike-black/10 rounded-full px-4 py-1 space-x-4">
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.id, item.selectedSize, item.selectedColor, item.quantity - 1)}
                         className="p-1 hover:text-nike-black/40 transition-colors"
                       >
                         <Minus size={14} />
                       </button>
                       <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.id, item.selectedSize, item.selectedColor, item.quantity + 1)}
                         className="p-1 hover:text-nike-black/40 transition-colors"
                       >
                         <Plus size={14} />
                       </button>
                     </div>
-                    <button 
+                    <button
                       onClick={() => removeFromCart(item.id, item.selectedSize, item.selectedColor)}
                       className="text-nike-black/40 hover:text-red-500 transition-colors"
                     >
@@ -86,29 +111,120 @@ const Cart = () => {
         <div className="lg:w-1/3">
           <div className="bg-nike-gray/30 p-8 rounded-2xl space-y-6 sticky top-32 border border-nike-gray">
             <h2 className="text-xl font-black uppercase tracking-tighter">Summary</h2>
-            <div className="space-y-4 text-sm font-medium uppercase">
+
+            {/* Voucher input */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-nike-black/40 flex items-center gap-1.5">
+                <Tag size={10} /> Voucher Code
+              </p>
+
+              {appliedVoucher ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-xs font-black text-green-700 uppercase tracking-wider">{appliedVoucher.code}</p>
+                      <p className="text-[10px] text-green-600/80 font-medium">
+                        {appliedVoucher.type === "percent"
+                          ? `${appliedVoucher.value}% off`
+                          : `৳${appliedVoucher.value.toLocaleString()} off`}
+                        {" "}applied
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { removeApplied(); setVoucherMsg(null); }}
+                    className="p-1 text-green-600/60 hover:text-red-500 transition-colors"
+                    title="Remove voucher"
+                  >
+                    <X size={14} />
+                  </button>
+                </motion.div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    id="voucher-input"
+                    className="flex-grow px-4 py-2.5 border border-nike-black/10 rounded-xl text-sm focus:border-nike-black outline-none transition-colors font-medium uppercase tracking-widest placeholder-normal-case placeholder:normal-case placeholder:tracking-normal"
+                    placeholder="Enter code"
+                    value={codeInput}
+                    onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                    onKeyDown={e => { if (e.key === "Enter") handleApply(); }}
+                  />
+                  <button
+                    id="apply-voucher-btn"
+                    onClick={handleApply}
+                    disabled={applying}
+                    className="px-4 py-2.5 bg-nike-black text-nike-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-nike-black/80 transition-colors shrink-0 disabled:opacity-50"
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
+
+              {/* Voucher feedback */}
+              <AnimatePresence>
+                {voucherMsg && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className={`flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl ${
+                      voucherMsg.ok
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : "bg-red-50 text-red-600 border border-red-200"
+                    }`}
+                  >
+                    {voucherMsg.ok
+                      ? <CheckCircle2 size={13} />
+                      : <AlertCircle size={13} />}
+                    {voucherMsg.text}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Totals */}
+            <div className="space-y-3 text-sm font-medium uppercase">
               <div className="flex justify-between">
                 <span className="text-nike-muted">Subtotal</span>
                 <span className="font-semibold">৳{cartTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-nike-muted">Estimated Shipping</span>
-                <span className="font-semibold">৳800</span>
+                <span className="text-nike-muted">Shipping</span>
+                <span className="font-semibold">৳{shipping.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-nike-muted">Tax</span>
-                <span className="font-semibold">৳1,200</span>
+                <span className="font-semibold">৳{tax.toLocaleString()}</span>
               </div>
+              {discount > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="flex justify-between text-green-700"
+                >
+                  <span className="flex items-center gap-1">
+                    <Tag size={12} />
+                    Voucher ({appliedVoucher?.code})
+                  </span>
+                  <span className="font-black">−৳{discount.toLocaleString()}</span>
+                </motion.div>
+              )}
               <div className="pt-4 border-t border-nike-gray border-dashed flex justify-between text-lg font-black">
                 <span>Total</span>
-                <span>৳{(cartTotal + 2000).toLocaleString()}</span>
+                <span>৳{finalTotal.toLocaleString()}</span>
               </div>
             </div>
+
             <Link
               to="/checkout"
               className="btn-bold w-full bg-nike-black text-nike-white hover:bg-nike-black/80"
             >
-              Checkout
+              Checkout <ArrowRight size={16} className="ml-2" />
             </Link>
           </div>
         </div>

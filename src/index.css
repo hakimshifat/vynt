@@ -56,4 +56,19 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .admin-input {
+    @apply w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all placeholder-white/20;
+  }
+  .admin-input:focus {
+    @apply border-violet-500/60 bg-white/8;
+  }
+  .admin-input option {
+    background: #1a1a2e;
+    color: white;
+  }
+
+  .admin-checkbox {
+    @apply appearance-none w-4 h-4 border-2 border-white/20 rounded cursor-pointer checked:bg-violet-500 checked:border-violet-500 transition-all;
+  }
 }

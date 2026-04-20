@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Heart, ShoppingBag, ChevronRight, Star } from "lucide-react";
 import { motion } from "motion/react";
-import { PRODUCTS } from "../constants";
+import { useProducts } from "../ProductContext";
 import { useCart } from "../CartContext";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
-  const product = PRODUCTS.find(p => p.id === id);
+  const { products } = useProducts();
+  const product = products.find(p => p.id === id);
 
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(product?.colors[0] || "");

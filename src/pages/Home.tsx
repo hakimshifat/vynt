@@ -2,11 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
-import { PRODUCTS } from "../constants";
+import { useProducts } from "../ProductContext";
 import ProductCard from "../components/ProductCard";
 
 const Home = () => {
-  const featuredProducts = PRODUCTS.filter(p => p.isFeatured);
+  const { products } = useProducts();
+  const featuredProducts = products.filter(p => p.isFeatured);
 
   return (
     <div className="space-y-20 pb-20">

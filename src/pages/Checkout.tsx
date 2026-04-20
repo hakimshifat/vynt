@@ -1,17 +1,31 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, CreditCard, Truck, ShieldCheck } from "lucide-react";
+import { CheckCircle, CreditCard, Truck, ShieldCheck, Tag } from "lucide-react";
 import { motion } from "motion/react";
 import { useCart } from "../CartContext";
+import { useVouchers } from "../VoucherContext";
 
 const Checkout = () => {
   const { cart, cartTotal, clearCart } = useCart();
+  const { appliedVoucher, removeApplied, incrementUsage } = useVouchers();
   const navigate = useNavigate();
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
 
+  const shipping = 2000;
+  const discount = appliedVoucher
+    ? (appliedVoucher.type === "percent"
+        ? Math.round((cartTotal * appliedVoucher.value) / 100)
+        : Math.min(appliedVoucher.value, cartTotal))
+    : 0;
+  const total = cartTotal + shipping - discount;
+
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (appliedVoucher) {
+      incrementUsage(appliedVoucher.code);
+      removeApplied();
+    }
     setIsSuccess(true);
     setTimeout(() => {
       clearCart();
@@ -84,8 +98,8 @@ const Checkout = () => {
                 <h2 className="text-xl font-black uppercase tracking-tighter">Payment</h2>
               </div>
               <div className="space-y-4">
-                {/* Card Option */}
-                <div 
+                {/* Card */}
+                <div
                   onClick={() => setPaymentMethod("card")}
                   className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${paymentMethod === "card" ? "border-nike-black" : "border-nike-black/10 hover:border-nike-black/40"}`}
                 >
@@ -98,8 +112,8 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                {/* bKash Option */}
-                <div 
+                {/* bKash */}
+                <div
                   onClick={() => setPaymentMethod("bkash")}
                   className={`p-6 border rounded-xl flex items-center justify-between cursor-pointer transition-colors ${paymentMethod === "bkash" ? "border-[#e2136e]" : "border-nike-black/10 hover:border-nike-black/40"}`}
                 >
@@ -128,10 +142,7 @@ const Checkout = () => {
               </div>
             </section>
 
-            <button
-              type="submit"
-              className="btn-bold w-full bg-nike-black text-nike-white hover:bg-nike-black/80"
-            >
+            <button type="submit" className="btn-bold w-full bg-nike-black text-nike-white hover:bg-nike-black/80">
               Place Order
             </button>
           </form>
@@ -155,6 +166,7 @@ const Checkout = () => {
                 </div>
               ))}
             </div>
+
             <div className="pt-6 border-t border-nike-black/10 space-y-2 text-sm font-medium uppercase tracking-widest">
               <div className="flex justify-between">
                 <span className="text-nike-black/60">Subtotal</span>
@@ -162,13 +174,28 @@ const Checkout = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-nike-black/60">Shipping & Tax</span>
-                <span>৳2,000</span>
+                <span>৳{shipping.toLocaleString()}</span>
               </div>
+              {discount > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex justify-between text-green-700"
+                >
+                  <span className="flex items-center gap-1 normal-case">
+                    <Tag size={12} />
+                    {appliedVoucher?.code}
+                    {appliedVoucher?.type === "percent" && ` (${appliedVoucher.value}% off)`}
+                  </span>
+                  <span className="font-black">−৳{discount.toLocaleString()}</span>
+                </motion.div>
+              )}
               <div className="pt-4 border-t border-nike-black/10 flex justify-between text-lg font-black">
                 <span>Total</span>
-                <span>৳{(cartTotal + 2000).toLocaleString()}</span>
+                <span>৳{total.toLocaleString()}</span>
               </div>
             </div>
+
             <div className="flex items-center space-x-2 text-[10px] text-nike-black/40 font-bold uppercase tracking-widest">
               <ShieldCheck size={14} />
               <span>Secure Checkout</span>

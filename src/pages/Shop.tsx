@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import { Filter, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { PRODUCTS } from "../constants";
+import { useProducts } from "../ProductContext";
 import ProductCard from "../components/ProductCard";
 
 const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const { products } = useProducts();
 
-  const categories = ["All", "Men's Shoes", "Men's Running Shoes"];
+  const categories = ["All", ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = selectedCategory === "All"
-    ? PRODUCTS
-    : PRODUCTS.filter(p => p.category === selectedCategory);
+    ? products
+    : products.filter(p => p.category === selectedCategory);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

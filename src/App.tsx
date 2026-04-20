@@ -5,9 +5,12 @@
 
 import React, { Suspense, lazy } from "react";
 import { HashRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
-import { ShoppingBag, Search, Menu, X, Instagram, Twitter, Facebook, Youtube } from "lucide-react";
+import { ShoppingBag, Search, Menu, X, Instagram, Twitter, Facebook, Youtube, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CartProvider, useCart } from "./CartContext";
+import { ProductProvider } from "./ProductContext";
+import { AdminProvider } from "./AdminContext";
+import { VoucherProvider } from "./VoucherContext";
 import ScrollToTop from "./components/ScrollToTop";
 
 // Lazy load pages
@@ -16,6 +19,8 @@ const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 const Navbar = () => {
   const { cartCount } = useCart();
@@ -56,6 +61,15 @@ const Navbar = () => {
                   {cartCount}
                 </span>
               )}
+            </Link>
+            {/* Discreet admin link */}
+            <Link
+              to="/admin/login"
+              id="admin-portal-link"
+              className="p-2 hover:bg-nike-gray rounded-full transition-colors opacity-20 hover:opacity-60"
+              title="Admin"
+            >
+              <ShieldCheck size={18} />
             </Link>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -156,31 +170,48 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => (
 
 export default function App() {
   return (
-    <CartProvider>
-      <Router>
-        <ScrollToTop />
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          <main className="flex-grow pt-[60px]">
-            <Suspense fallback={
-              <div className="h-screen w-full flex items-center justify-center">
-                <div className="w-12 h-12 border-4 border-nike-black border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            }>
-              <AnimatePresence mode="wait">
-                <Routes>
-                  <Route path="/" element={<PageTransition><Home /></PageTransition>} />
-                  <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
-                  <Route path="/product/:id" element={<PageTransition><ProductDetail /></PageTransition>} />
-                  <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />
-                  <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
-                </Routes>
-              </AnimatePresence>
-            </Suspense>
-          </main>
-          <Footer />
-        </div>
-      </Router>
-    </CartProvider>
+    <AdminProvider>
+      <ProductProvider>
+        <VoucherProvider>
+          <CartProvider>
+            <Router>
+            <ScrollToTop />
+            <div className="min-h-screen flex flex-col">
+              <Suspense fallback={
+                <div className="h-screen w-full flex items-center justify-center">
+                  <div className="w-12 h-12 border-4 border-nike-black border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              }>
+                <AnimatePresence mode="wait">
+                  <Routes>
+                    {/* Admin routes — no Navbar/Footer */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
+
+                    {/* Public store routes */}
+                    <Route path="/*" element={
+                      <>
+                        <Navbar />
+                        <main className="flex-grow pt-[60px]">
+                          <Routes>
+                            <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+                            <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
+                            <Route path="/product/:id" element={<PageTransition><ProductDetail /></PageTransition>} />
+                            <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />
+                            <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
+                          </Routes>
+                        </main>
+                        <Footer />
+                      </>
+                    } />
+                  </Routes>
+                </AnimatePresence>
+              </Suspense>
+          </div>
+            </Router>
+          </CartProvider>
+        </VoucherProvider>
+      </ProductProvider>
+    </AdminProvider>
   );
 }
