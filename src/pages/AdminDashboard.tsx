@@ -36,12 +36,28 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
 
 const CATEGORIES = ["Men's Shoes", "Men's Running Shoes", "Limited Edition", "Sale"];
 
-async function uploadToStorage(file: File): Promise<string> {
-  const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storageRef = ref(storage, `products/${timestamp}-${safeName}`);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImage(file: File): Promise<string> {
+  // Try Firebase Storage first (proper cloud URLs)
+  try {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storageRef = ref(storage, `products/${timestamp}-${safeName}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  } catch (err) {
+    console.warn("[ImageUpload] Storage upload failed, using data URL fallback:", err);
+    // Fallback: convert to base64 data URL and store in Firestore directly
+    return fileToDataUrl(file);
+  }
 }
 
 // ─── Shared UI Atoms ──────────────────────────────────────────────────────────
@@ -87,7 +103,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ value, onChange, label, place
     if (!file.type.startsWith("image/")) return;
     setUploading(true);
     try {
-      const url = await uploadToStorage(file);
+      const url = await uploadImage(file);
       onChange(url);
     } catch (err) {
       console.error("Upload failed:", err);
@@ -164,7 +180,7 @@ const GalleryPicker: React.FC<{ images: string[]; onChange: (imgs: string[]) => 
       const results: string[] = [];
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
-        results.push(await uploadToStorage(file));
+        results.push(await uploadImage(file));
       }
       onChange([...images, ...results]);
     } catch (err) {
