@@ -15,6 +15,8 @@ import {
   ShoppingCart, Clock, Truck, CheckCircle, ChevronDown, ChevronUp,
   Loader2, Store, Menu, ArrowLeft, Zap, BarChart3,
 } from "lucide-react";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
 import { useAdmin } from "../AdminContext";
 import { useProducts } from "../ProductContext";
 import { useVouchers, Voucher, DiscountType } from "../VoucherContext";
@@ -34,13 +36,12 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
 
 const CATEGORIES = ["Men's Shoes", "Men's Running Shoes", "Limited Edition", "Sale"];
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+async function uploadToStorage(file: File): Promise<string> {
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storageRef = ref(storage, `products/${timestamp}-${safeName}`);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
 }
 
 // ─── Shared UI Atoms ──────────────────────────────────────────────────────────
@@ -79,12 +80,21 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ value, onChange, label, place
   const [tab, setTab] = useState<"url" | "upload">("url");
   const [urlInput, setUrlInput] = useState(value.startsWith("data:") ? "" : value);
   const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 800_000) alert("⚠️ Image >800KB — consider using a URL instead.");
-    onChange(await fileToDataUrl(file));
+    setUploading(true);
+    try {
+      const url = await uploadToStorage(file);
+      onChange(url);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Image upload failed. Please try again or use a URL.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -108,23 +118,31 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ value, onChange, label, place
             className="px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold rounded-xl transition-colors shrink-0 min-h-[44px]">Set</button>
         </div>
       ) : (
-        <div className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${dragging ? "border-violet-400 bg-violet-500/10" : "border-white/10 hover:border-white/25"}`}
+        <div className={`border-2 border-dashed rounded-xl p-5 text-center transition-all ${uploading ? "border-violet-400 bg-violet-500/10 pointer-events-none" : dragging ? "border-violet-400 bg-violet-500/10" : "border-white/10 hover:border-white/25 cursor-pointer"}`}
           onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
           onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-          onClick={() => fileRef.current?.click()}>
+          onClick={() => !uploading && fileRef.current?.click()}>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
-          <Upload size={20} className="mx-auto mb-2 text-white/30" />
-          <p className="text-xs text-white/40 font-medium">Drop or <span className="text-violet-400 underline">browse</span></p>
+          {uploading ? (
+            <>
+              <Loader2 size={20} className="mx-auto mb-2 text-violet-400 animate-spin" />
+              <p className="text-xs text-violet-400 font-medium">Uploading…</p>
+            </>
+          ) : (
+            <>
+              <Upload size={20} className="mx-auto mb-2 text-white/30" />
+              <p className="text-xs text-white/40 font-medium">Drop or <span className="text-violet-400 underline">browse</span></p>
+            </>
+          )}
         </div>
       )}
       {value && (
         <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 group">
-          <img src={value} alt="preview" className="w-full h-full object-cover" />
+          <img src={value} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           <button type="button" onClick={() => { onChange(""); setUrlInput(""); }}
             className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <X size={14} className="text-white" />
           </button>
-          {value.startsWith("data:") && <span className="absolute bottom-0 left-0 right-0 text-[7px] text-center bg-violet-700 text-white py-0.5 font-bold">LOCAL</span>}
         </div>
       )}
     </div>
@@ -136,17 +154,25 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ value, onChange, label, place
 const GalleryPicker: React.FC<{ images: string[]; onChange: (imgs: string[]) => void }> = ({ images, onChange }) => {
   const [tab, setTab] = useState<"url" | "upload">("url");
   const [urlInput, setUrlInput] = useState("");
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const addUrl = () => { if (!urlInput.trim()) return; onChange([...images, urlInput.trim()]); setUrlInput(""); };
   const handleFiles = async (files: FileList) => {
-    const results: string[] = [];
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
-      if (file.size > 800_000) alert(`⚠️ "${file.name}" is large — use URLs for better perf.`);
-      results.push(await fileToDataUrl(file));
+    setUploading(true);
+    try {
+      const results: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        results.push(await uploadToStorage(file));
+      }
+      onChange([...images, ...results]);
+    } catch (err) {
+      console.error("Gallery upload failed:", err);
+      alert("Image upload failed. Please try again or use URLs.");
+    } finally {
+      setUploading(false);
     }
-    onChange([...images, ...results]);
   };
   const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
   const move = (i: number, dir: -1 | 1) => { const n = [...images]; [n[i], n[i + dir]] = [n[i + dir], n[i]]; onChange(n); };
@@ -172,18 +198,27 @@ const GalleryPicker: React.FC<{ images: string[]; onChange: (imgs: string[]) => 
             className="px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold rounded-xl transition-colors shrink-0 min-h-[44px]">Add</button>
         </div>
       ) : (
-        <div className="border-2 border-dashed border-white/10 hover:border-white/25 rounded-xl p-4 text-center cursor-pointer transition-all" onClick={() => fileRef.current?.click()}>
+        <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${uploading ? "border-violet-400 bg-violet-500/10 pointer-events-none" : "border-white/10 hover:border-white/25 cursor-pointer"}`}
+          onClick={() => !uploading && fileRef.current?.click()}>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); }} />
-          <Upload size={16} className="mx-auto mb-1 text-white/30" />
-          <p className="text-xs text-white/40 font-medium">Select images</p>
+          {uploading ? (
+            <>
+              <Loader2 size={16} className="mx-auto mb-1 text-violet-400 animate-spin" />
+              <p className="text-xs text-violet-400 font-medium">Uploading…</p>
+            </>
+          ) : (
+            <>
+              <Upload size={16} className="mx-auto mb-1 text-white/30" />
+              <p className="text-xs text-white/40 font-medium">Select images</p>
+            </>
+          )}
         </div>
       )}
       {images.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {images.map((url, i) => (
             <div key={i} className="relative group w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-white/10">
-              <img src={url} alt={`g-${i}`} className="w-full h-full object-cover" />
-              {url.startsWith("data:") && <span className="absolute bottom-0 left-0 right-0 text-[7px] text-center bg-violet-700 text-white py-0.5 font-bold">LOCAL</span>}
+              <img src={url} alt={`g-${i}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                 <button type="button" onClick={() => remove(i)} className="p-1.5 bg-red-500/80 rounded-md"><X size={11} className="text-white" /></button>
                 <div className="flex gap-1">
@@ -325,12 +360,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initial, onSave, onCancel }) 
             <GalleryPicker images={form.gallery ?? []}
               onChange={imgs => setForm(f => ({ ...f, gallery: imgs }))} />
           </div>
-          {[form.image, ...(form.gallery ?? [])].some(u => u?.startsWith("data:")) && (
-            <div className="mt-3 flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-              <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-amber-400/90">Local images use localStorage (~5–10MB limit). Use image URLs for best results.</p>
-            </div>
-          )}
+
         </div>
 
         {/* Error */}
@@ -451,6 +481,7 @@ const ProductsPanel: React.FC = () => {
                 {/* Thumbnail */}
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/5 shrink-0">
                   <img src={product.image} alt={product.name} className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                     onError={e => { (e.target as HTMLImageElement).src = "https://placehold.co/56x56/111/555?text=?"; }} />
                 </div>
                 {/* Info */}

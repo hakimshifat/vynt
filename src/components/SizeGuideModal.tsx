@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface SizeGuideModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div className="p-8 overflow-y-auto prose prose-sm md:prose-base max-w-none text-nike-black/80">
               <Markdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({node, ...props}) => <h1 className="text-2xl font-black uppercase tracking-tighter mb-6 text-black" {...props} />,
                   h3: ({node, ...props}) => <h3 className="text-lg font-bold uppercase tracking-tight mt-8 mb-4 text-black" {...props} />,

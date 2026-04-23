@@ -84,7 +84,7 @@ const ProductDetail = () => {
           {/* Thumbnails */}
           {product.gallery && product.gallery.length > 0 && (
             <div className="flex gap-4 p-6 bg-nike-white overflow-x-auto no-scrollbar border-t border-nike-gray">
-              {[product.image, ...product.gallery].map((imgUrl, i) => (
+              {[product.image, ...product.gallery.filter(g => g !== product.image)].map((imgUrl, i) => (
                 <button 
                   key={i} 
                   onClick={() => setActiveImage(imgUrl)}
@@ -92,7 +92,8 @@ const ProductDetail = () => {
                     (activeImage || product.image) === imgUrl ? 'border-nike-black opacity-100' : 'border-transparent opacity-60 hover:opacity-100 hover:border-nike-gray'
                   }`}
                 >
-                  <img src={imgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`thumbnail ${i}`} />
+                  <img src={imgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={`thumbnail ${i}`}
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </button>
               ))}
             </div>
