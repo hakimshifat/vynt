@@ -51,8 +51,18 @@ async function uploadImage(file: File): Promise<string> {
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const storageRef = ref(storage, `products/${timestamp}-${safeName}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    
+    // Use Promise.race to enforce a 10-second timeout on the upload
+    const uploadTask = async () => {
+      await uploadBytes(storageRef, file);
+      return await getDownloadURL(storageRef);
+    };
+    
+    const timeoutTask = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Storage upload timed out after 10s")), 10000);
+    });
+
+    return await Promise.race([uploadTask(), timeoutTask]);
   } catch (err) {
     console.warn("[ImageUpload] Storage upload failed, using data URL fallback:", err);
     // Fallback: convert to base64 data URL and store in Firestore directly
