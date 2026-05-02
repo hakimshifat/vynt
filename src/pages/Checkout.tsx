@@ -18,10 +18,10 @@ import { useCart } from "../CartContext";
 import { useVouchers } from "../VoucherContext";
 import { useOrders } from "../OrderContext";
 
-// ─── EDIT THESE TO UPDATE YOUR BKASH INFO ────────────────────────────────────
-const BKASH_NUMBER    = "01XXXXXXXXX";   // TODO: replace with your bKash number
-const CONTACT_PHONE   = "01XXXXXXXXX";   // TODO: replace with your phone for calls
-const CONTACT_WHATSAPP = "880XXXXXXXXX"; // TODO: replace with your WhatsApp number (no +)
+// ─── CONTACT / BKASH INFO ─────────────────────────────────────────────────────
+const BKASH_NUMBER    = "01922160036";
+const CONTACT_PHONE   = "01922160036";
+const CONTACT_WHATSAPP = "8801922160036";
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface FormState {
