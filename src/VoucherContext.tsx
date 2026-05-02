@@ -4,17 +4,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-  deleteDoc,
-  writeBatch,
-  increment,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { supabase } from "./supabase";
+import { useAdmin } from "./AdminContext";
 
 export type DiscountType = "percent" | "fixed";
 
@@ -39,7 +30,6 @@ interface VoucherContextType {
   addVoucher: (v: Voucher) => void;
   updateVoucher: (v: Voucher) => void;
   deleteVoucher: (code: string) => void;
-  incrementUsage: (code: string) => void;
 }
 
 const COLLECTION  = "vouchers";
@@ -86,39 +76,88 @@ function computeDiscount(voucher: Voucher, cartTotal: number): number {
 
 const VoucherContext = createContext<VoucherContextType | undefined>(undefined);
 
+interface VoucherRow {
+  code: string;
+  type: DiscountType;
+  value: number;
+  min_order: number | null;
+  active: boolean;
+  usage_limit: number | null;
+  used_count: number;
+  description: string | null;
+}
+
+function fromRow(row: VoucherRow): Voucher {
+  return {
+    code: row.code,
+    type: row.type,
+    value: Number(row.value),
+    minOrder: row.min_order ?? undefined,
+    active: row.active,
+    usageLimit: row.usage_limit ?? undefined,
+    usedCount: row.used_count ?? 0,
+    description: row.description ?? undefined,
+  };
+}
+
+function toRow(voucher: Voucher) {
+  return {
+    code: voucher.code.toUpperCase(),
+    type: voucher.type,
+    value: voucher.value,
+    min_order: voucher.minOrder ?? null,
+    active: voucher.active,
+    usage_limit: voucher.usageLimit ?? null,
+    used_count: voucher.usedCount,
+    description: voucher.description ?? null,
+  };
+}
+
 export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [vouchers, setVouchers] = useState<Voucher[]>(DEFAULT_VOUCHERS);
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(loadApplied);
   const [cartTotalSnapshot, setCartTotalSnapshot] = useState(0);
+  const { isAdmin } = useAdmin();
 
-  // Real-time listener on vouchers collection
   useEffect(() => {
-    const ref = collection(db, COLLECTION);
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        if (snap.empty) {
-          seedDefaults();
-          return;
-        }
-        const loaded: Voucher[] = snap.docs.map((d) => d.data() as Voucher);
-        setVouchers(loaded);
-      },
-      (err) => {
-        console.error("[VoucherContext] Firestore error:", err);
+    loadVouchers();
+
+    const channel = supabase
+      .channel("vouchers-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: COLLECTION }, loadVouchers)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
+
+  const loadVouchers = async () => {
+    const { data, error } = await supabase.from(COLLECTION).select("*").order("code");
+
+    if (error) {
+      console.error("[VoucherContext] Supabase error:", error);
+      setVouchers(DEFAULT_VOUCHERS);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      if (isAdmin) {
+        await seedDefaults();
+      } else {
         setVouchers(DEFAULT_VOUCHERS);
       }
-    );
-    return unsub;
-  }, []);
+      return;
+    }
+
+    setVouchers((data as VoucherRow[]).map(fromRow));
+  };
 
   const seedDefaults = async () => {
     try {
-      const batch = writeBatch(db);
-      DEFAULT_VOUCHERS.forEach((v) => {
-        batch.set(doc(db, COLLECTION, v.code), v);
-      });
-      await batch.commit();
+      const { error } = await supabase.from(COLLECTION).upsert(DEFAULT_VOUCHERS.map(toRow));
+      if (error) throw error;
+      setVouchers(DEFAULT_VOUCHERS);
     } catch (err) {
       console.error("[VoucherContext] Failed to seed defaults:", err);
     }
@@ -159,7 +198,8 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addVoucher = async (v: Voucher) => {
     try {
-      await setDoc(doc(db, COLLECTION, v.code), v);
+      const { error } = await supabase.from(COLLECTION).upsert(toRow(v));
+      if (error) throw error;
     } catch (err) {
       console.error("[VoucherContext] addVoucher failed:", err);
     }
@@ -167,7 +207,8 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateVoucher = async (v: Voucher) => {
     try {
-      await setDoc(doc(db, COLLECTION, v.code), v, { merge: true });
+      const { error } = await supabase.from(COLLECTION).upsert(toRow(v));
+      if (error) throw error;
     } catch (err) {
       console.error("[VoucherContext] updateVoucher failed:", err);
     }
@@ -175,20 +216,11 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteVoucher = async (code: string) => {
     try {
-      await deleteDoc(doc(db, COLLECTION, code));
+      const { error } = await supabase.from(COLLECTION).delete().eq("code", code);
+      if (error) throw error;
       if (appliedVoucher?.code === code) setAppliedVoucher(null);
     } catch (err) {
       console.error("[VoucherContext] deleteVoucher failed:", err);
-    }
-  };
-
-  const incrementUsage = async (code: string) => {
-    try {
-      await updateDoc(doc(db, COLLECTION, code), {
-        usedCount: increment(1),
-      });
-    } catch (err) {
-      console.error("[VoucherContext] incrementUsage failed:", err);
     }
   };
 
@@ -203,7 +235,6 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addVoucher,
         updateVoucher,
         deleteVoucher,
-        incrementUsage,
       }}
     >
       {children}

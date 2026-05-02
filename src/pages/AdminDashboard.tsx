@@ -15,8 +15,7 @@ import {
   ShoppingCart, Clock, Truck, CheckCircle, ChevronDown, ChevronUp,
   Loader2, Store, Menu, ArrowLeft, Zap, BarChart3,
 } from "lucide-react";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../firebase";
+import { supabase } from "../supabase";
 import { useAdmin } from "../AdminContext";
 import { useProducts } from "../ProductContext";
 import { useVouchers, Voucher, DiscountType } from "../VoucherContext";
@@ -46,16 +45,24 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 async function uploadImage(file: File): Promise<string> {
-  // Try Firebase Storage first (proper cloud URLs)
+  // Try Supabase Storage first (proper cloud URLs)
   try {
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storageRef = ref(storage, `products/${timestamp}-${safeName}`);
+    const path = `products/${timestamp}-${safeName}`;
     
     // Use Promise.race to enforce a 10-second timeout on the upload
     const uploadTask = async () => {
-      await uploadBytes(storageRef, file);
-      return await getDownloadURL(storageRef);
+      const { error } = await supabase.storage
+        .from("product-images")
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      return data.publicUrl;
     };
     
     const timeoutTask = new Promise<never>((_, reject) => {
@@ -65,7 +72,7 @@ async function uploadImage(file: File): Promise<string> {
     return await Promise.race([uploadTask(), timeoutTask]);
   } catch (err) {
     console.warn("[ImageUpload] Storage upload failed, using data URL fallback:", err);
-    // Fallback: convert to base64 data URL and store in Firestore directly
+    // Fallback: convert to base64 data URL and store in Supabase directly
     return fileToDataUrl(file);
   }
 }

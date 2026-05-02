@@ -4,18 +4,10 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-  deleteDoc,
-  writeBatch,
-  Timestamp,
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { supabase } from "./supabase";
 import { Product } from "./types";
 import { PRODUCTS as DEFAULT_PRODUCTS } from "./constants";
+import { useAdmin } from "./AdminContext";
 
 interface ProductContextType {
   products: Product[];
@@ -30,48 +22,109 @@ const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 const COLLECTION = "products";
 
+interface ProductRow {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  image: string;
+  description: string;
+  colors: string[];
+  sizes: string[];
+  gallery: string[] | null;
+  is_new: boolean | null;
+  is_featured: boolean | null;
+  subtitle: string | null;
+  scarcity_message: string | null;
+}
+
+function fromRow(row: ProductRow): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    price: Number(row.price),
+    image: row.image,
+    description: row.description,
+    colors: row.colors ?? [],
+    sizes: row.sizes ?? [],
+    gallery: row.gallery ?? [],
+    isNew: row.is_new ?? false,
+    isFeatured: row.is_featured ?? false,
+    subtitle: row.subtitle ?? "",
+    scarcityMessage: row.scarcity_message ?? "",
+  };
+}
+
+function toRow(product: Product) {
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    image: product.image,
+    description: product.description,
+    colors: product.colors,
+    sizes: product.sizes,
+    gallery: product.gallery ?? [],
+    is_new: product.isNew ?? false,
+    is_featured: product.isFeatured ?? false,
+    subtitle: product.subtitle ?? null,
+    scarcity_message: product.scarcityMessage ?? null,
+  };
+}
+
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
   const [loading, setLoading] = useState(true);
-  const [firestoreOk, setFirestoreOk] = useState(true);
+  const { isAdmin } = useAdmin();
 
-  // Real-time listener on the products collection
   useEffect(() => {
-    const ref = collection(db, COLLECTION);
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        if (snap.empty) {
-          // First run — Firestore is empty, seed with defaults
-          seedDefaults();
-          return;
-        }
-        const loaded: Product[] = snap.docs.map((d) => d.data() as Product);
-        // Sort by a stable order field if present, otherwise by name
-        loaded.sort((a, b) => a.name.localeCompare(b.name));
-        setProducts(loaded);
-        setLoading(false);
-        setFirestoreOk(true);
-      },
-      (err) => {
-        console.error("[ProductContext] Firestore error:", err);
-        // Fall back to hardcoded defaults so the store still works
+    loadProducts();
+
+    const channel = supabase
+      .channel("products-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: COLLECTION }, loadProducts)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
+
+  const loadProducts = async () => {
+    const { data, error } = await supabase
+      .from(COLLECTION)
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("[ProductContext] Supabase error:", error);
+      setProducts(DEFAULT_PRODUCTS);
+      setLoading(false);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      if (isAdmin) {
+        await seedDefaults();
+      } else {
         setProducts(DEFAULT_PRODUCTS);
         setLoading(false);
-        setFirestoreOk(false);
       }
-    );
-    return unsub;
-  }, []);
+      return;
+    }
+
+    setProducts((data as ProductRow[]).map(fromRow));
+    setLoading(false);
+  };
 
   const seedDefaults = async () => {
     try {
-      const batch = writeBatch(db);
-      DEFAULT_PRODUCTS.forEach((p) => {
-        batch.set(doc(db, COLLECTION, p.id), p);
-      });
-      await batch.commit();
-      // onSnapshot will fire again with the seeded data
+      const { error } = await supabase.from(COLLECTION).upsert(DEFAULT_PRODUCTS.map(toRow));
+      if (error) throw error;
+      setProducts(DEFAULT_PRODUCTS);
+      setLoading(false);
     } catch (err) {
       console.error("[ProductContext] Failed to seed defaults:", err);
       setProducts(DEFAULT_PRODUCTS);
@@ -81,7 +134,8 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addProduct = async (product: Product) => {
     try {
-      await setDoc(doc(db, COLLECTION, product.id), product);
+      const { error } = await supabase.from(COLLECTION).upsert(toRow(product));
+      if (error) throw error;
     } catch (err) {
       console.error("[ProductContext] addProduct failed:", err);
     }
@@ -89,7 +143,8 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateProduct = async (product: Product) => {
     try {
-      await setDoc(doc(db, COLLECTION, product.id), product, { merge: true });
+      const { error } = await supabase.from(COLLECTION).upsert(toRow(product));
+      if (error) throw error;
     } catch (err) {
       console.error("[ProductContext] updateProduct failed:", err);
     }
@@ -97,7 +152,8 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteProduct = async (id: string) => {
     try {
-      await deleteDoc(doc(db, COLLECTION, id));
+      const { error } = await supabase.from(COLLECTION).delete().eq("id", id);
+      if (error) throw error;
     } catch (err) {
       console.error("[ProductContext] deleteProduct failed:", err);
     }
@@ -105,15 +161,15 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const resetToDefaults = async () => {
     try {
-      // Delete all current docs then re-seed
-      const batch = writeBatch(db);
-      products.forEach((p) => {
-        batch.delete(doc(db, COLLECTION, p.id));
-      });
-      DEFAULT_PRODUCTS.forEach((p) => {
-        batch.set(doc(db, COLLECTION, p.id), p);
-      });
-      await batch.commit();
+      if (products.length > 0) {
+        const { error: deleteError } = await supabase
+          .from(COLLECTION)
+          .delete()
+          .in("id", products.map((p) => p.id));
+        if (deleteError) throw deleteError;
+      }
+      const { error } = await supabase.from(COLLECTION).upsert(DEFAULT_PRODUCTS.map(toRow));
+      if (error) throw error;
     } catch (err) {
       console.error("[ProductContext] resetToDefaults failed:", err);
     }

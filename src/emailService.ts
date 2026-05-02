@@ -54,6 +54,6 @@ export async function sendOrderNotification(order: Order): Promise<void> {
     await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
   } catch (err) {
     console.error("[EmailJS] Failed to send order notification:", err);
-    // Non-fatal — order is already saved to Firestore
+    // Non-fatal - order is already saved to Supabase
   }
 }

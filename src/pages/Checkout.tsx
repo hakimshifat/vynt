@@ -47,7 +47,7 @@ const inputClass =
 
 const Checkout = () => {
   const { cart, cartTotal, clearCart } = useCart();
-  const { appliedVoucher, removeApplied, incrementUsage } = useVouchers();
+  const { appliedVoucher, removeApplied } = useVouchers();
   const { placeOrder } = useOrders();
   const navigate = useNavigate();
 
@@ -111,7 +111,6 @@ const Checkout = () => {
       const id = await placeOrder(orderPayload);
 
       if (appliedVoucher) {
-        incrementUsage(appliedVoucher.code);
         removeApplied();
       }
 
