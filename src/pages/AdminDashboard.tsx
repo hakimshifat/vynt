@@ -13,13 +13,14 @@ import {
   Upload, Link2, ChevronLeft, ChevronRight, AlertTriangle,
   Ticket, ToggleLeft, ToggleRight, Percent, Hash,
   ShoppingCart, Clock, Truck, CheckCircle, ChevronDown, ChevronUp,
-  Loader2, Store, Menu, ArrowLeft, Zap, BarChart3,
+  Loader2, Store, Menu, ArrowLeft, Zap, BarChart3, Settings,
 } from "lucide-react";
 import { supabase } from "../supabase";
 import { useAdmin } from "../AdminContext";
 import { useProducts } from "../ProductContext";
 import { useVouchers, Voucher, DiscountType } from "../VoucherContext";
 import { useOrders, OrderStatus } from "../OrderContext";
+import { useShipping, ShippingConfig } from "../ShippingContext";
 import { Product } from "../types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -876,14 +877,126 @@ const OrdersPanel: React.FC = () => {
   );
 };
 
+// ─── Settings Panel (Shipping) ────────────────────────────────────────────────
+
+const SettingsPanel: React.FC = () => {
+  const { shipping, updateShipping } = useShipping();
+  const [form, setForm] = useState<ShippingConfig>({ ...shipping });
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    updateShipping(form);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-black text-white uppercase tracking-tight">Settings</h2>
+
+      {/* Shipping Costs */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#0d0d1c] border border-white/8 rounded-2xl overflow-hidden"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-white/3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+              <Truck size={14} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white tracking-tight">Shipping Costs</h3>
+              <p className="text-[10px] text-white/35 font-medium">Set delivery charges for Inside & Outside Dhaka</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-5 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                <Truck size={10} /> Inside Dhaka (৳)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-white/30 font-bold">৳</span>
+                <input
+                  className={`${adminInput} pl-8`}
+                  type="number"
+                  min={0}
+                  step={10}
+                  placeholder="80"
+                  value={form.insideDhaka}
+                  onChange={e => setForm(f => ({ ...f, insideDhaka: Number(e.target.value) }))}
+                />
+              </div>
+              <p className="text-[10px] text-white/25 font-medium">Delivery within Dhaka city (1–2 days)</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                <Truck size={10} /> Outside Dhaka (৳)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-white/30 font-bold">৳</span>
+                <input
+                  className={`${adminInput} pl-8`}
+                  type="number"
+                  min={0}
+                  step={10}
+                  placeholder="150"
+                  value={form.outsideDhaka}
+                  onChange={e => setForm(f => ({ ...f, outsideDhaka: Number(e.target.value) }))}
+                />
+              </div>
+              <p className="text-[10px] text-white/25 font-medium">Delivery outside Dhaka (3–5 days)</p>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="bg-white/3 border border-white/6 rounded-xl p-4">
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-3">Preview</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Inside Dhaka</p>
+                <p className="text-lg font-black text-emerald-400 mt-1">৳{form.insideDhaka.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Outside Dhaka</p>
+                <p className="text-lg font-black text-blue-400 mt-1">৳{form.outsideDhaka.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Save */}
+          <div className="flex justify-end pt-2 border-t border-white/6">
+            <motion.button
+              type="button"
+              onClick={handleSave}
+              animate={saved ? { scale: [1, 1.04, 1] } : {}}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                saved
+                  ? "bg-green-500 text-white"
+                  : "bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white shadow-lg shadow-violet-500/25"
+              }`}
+            >
+              {saved ? <CheckCircle2 size={14} /> : <Save size={14} />}
+              {saved ? "Saved!" : "Save Shipping"}
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── Admin Dashboard ───────────────────────────────────────────────────────────
 
-type Tab = "products" | "vouchers" | "orders";
+type Tab = "products" | "vouchers" | "orders" | "settings";
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: "products", label: "Products", icon: Package },
   { key: "vouchers", label: "Vouchers", icon: Ticket },
   { key: "orders",   label: "Orders",   icon: ShoppingCart },
+  { key: "settings", label: "Settings", icon: Settings },
 ];
 
 const AdminDashboard: React.FC = () => {
@@ -1007,6 +1120,7 @@ const AdminDashboard: React.FC = () => {
             {tab === "products" && <ProductsPanel />}
             {tab === "vouchers" && <VoucherPanel />}
             {tab === "orders" && <OrdersPanel />}
+            {tab === "settings" && <SettingsPanel />}
           </motion.div>
         </AnimatePresence>
       </main>

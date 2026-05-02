@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "../CartContext";
 import { useVouchers } from "../VoucherContext";
 import { useOrders } from "../OrderContext";
+import { useShipping } from "../ShippingContext";
 
 // ─── CONTACT / BKASH INFO ─────────────────────────────────────────────────────
 const BKASH_NUMBER    = "01922160036";
@@ -51,13 +52,16 @@ const Checkout = () => {
   const { placeOrder } = useOrders();
   const navigate = useNavigate();
 
+  const { shipping: shippingConfig } = useShipping();
+
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [deliveryZone, setDeliveryZone] = useState<"insideDhaka" | "outsideDhaka">("insideDhaka");
 
-  const shipping = 2000;
+  const shipping = deliveryZone === "insideDhaka" ? shippingConfig.insideDhaka : shippingConfig.outsideDhaka;
   const discount = appliedVoucher
     ? appliedVoucher.type === "percent"
       ? Math.round((cartTotal * appliedVoucher.value) / 100)
@@ -158,22 +162,55 @@ const Checkout = () => {
         <div className="lg:w-2/3">
           <form onSubmit={handlePlaceOrder} className="space-y-10">
 
-            {/* Delivery */}
+            {/* Delivery Zone */}
             <section className="space-y-4">
               <div className="flex items-center gap-2">
                 <Truck size={18} />
-                <h2 className="text-lg font-black uppercase tracking-tighter">Delivery</h2>
+                <h2 className="text-lg font-black uppercase tracking-tighter">Delivery Zone</h2>
               </div>
-              <div className="p-5 border-2 border-nike-black/10 rounded-xl bg-nike-gray/30 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-widest">Standard Delivery</p>
-                  <p className="text-xs text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
-                    ৳2,000 · 3–5 Business Days · Nationwide
-                  </p>
-                </div>
-                <div className="w-5 h-5 bg-nike-black rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryZone("insideDhaka")}
+                  className={`p-5 border-2 rounded-xl flex items-center justify-between transition-all ${
+                    deliveryZone === "insideDhaka"
+                      ? "border-nike-black bg-nike-gray/30"
+                      : "border-nike-black/10 hover:border-nike-black/30"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest">Inside Dhaka</p>
+                    <p className="text-xs text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      ৳{shippingConfig.insideDhaka.toLocaleString()} · 1–2 Business Days
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    deliveryZone === "insideDhaka" ? "border-nike-black bg-nike-black" : "border-nike-black/20"
+                  }`}>
+                    {deliveryZone === "insideDhaka" && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryZone("outsideDhaka")}
+                  className={`p-5 border-2 rounded-xl flex items-center justify-between transition-all ${
+                    deliveryZone === "outsideDhaka"
+                      ? "border-nike-black bg-nike-gray/30"
+                      : "border-nike-black/10 hover:border-nike-black/30"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest">Outside Dhaka</p>
+                    <p className="text-xs text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      ৳{shippingConfig.outsideDhaka.toLocaleString()} · 3–5 Business Days
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    deliveryZone === "outsideDhaka" ? "border-nike-black bg-nike-black" : "border-nike-black/20"
+                  }`}>
+                    {deliveryZone === "outsideDhaka" && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                </button>
               </div>
             </section>
 

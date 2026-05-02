@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Heart, ShoppingBag, ChevronRight, Star, ArrowRight, MessageCircle } from "lucide-react";
+import { Heart, ShoppingBag, ChevronRight, Star, ArrowRight, MessageCircle, Truck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useProducts } from "../ProductContext";
 import { useCart } from "../CartContext";
 import { useFavourites } from "../FavouriteContext";
+import { useShipping } from "../ShippingContext";
 import SizeGuideModal from "../components/SizeGuideModal";
 
 const ProductDetail = () => {
@@ -23,6 +24,7 @@ const ProductDetail = () => {
   const [bgPos, setBgPos] = useState({ x: 50, y: 50 });
 
   const { toggleFavourite, isFavourite } = useFavourites();
+  const { shipping } = useShipping();
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -228,9 +230,30 @@ const ProductDetail = () => {
 
             {/* Shipping & Returns */}
             <div className="pt-8 border-t border-nike-black/5 space-y-4">
-              <div className="flex justify-between items-center group cursor-pointer">
-                <h3 className="text-sm font-black uppercase tracking-widest">Shipping & Returns</h3>
-                <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
+              <h3 className="text-sm font-black uppercase tracking-widest">Shipping & Delivery</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 bg-nike-gray/40 border border-nike-black/6 rounded-xl p-4">
+                  <div className="w-9 h-9 bg-nike-black/5 rounded-lg flex items-center justify-center shrink-0">
+                    <Truck size={16} className="text-nike-black/60" />
+                  </div>
+                  <div className="flex-grow">
+                    <p className="text-xs font-black uppercase tracking-widest">Inside Dhaka</p>
+                    <p className="text-[10px] text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      ৳{shipping.insideDhaka.toLocaleString()} · 1–2 Business Days
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-nike-gray/40 border border-nike-black/6 rounded-xl p-4">
+                  <div className="w-9 h-9 bg-nike-black/5 rounded-lg flex items-center justify-center shrink-0">
+                    <Truck size={16} className="text-nike-black/60" />
+                  </div>
+                  <div className="flex-grow">
+                    <p className="text-xs font-black uppercase tracking-widest">Outside Dhaka</p>
+                    <p className="text-[10px] text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      ৳{shipping.outsideDhaka.toLocaleString()} · 3–5 Business Days
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between items-center group cursor-pointer">
                 <h3 className="text-sm font-black uppercase tracking-widest">Reviews (48)</h3>
