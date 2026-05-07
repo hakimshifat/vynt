@@ -15,6 +15,7 @@ create table if not exists public.products (
   is_featured boolean not null default false,
   subtitle text,
   scarcity_message text,
+  discounted_price numeric,
   created_at timestamptz not null default now()
 );
 

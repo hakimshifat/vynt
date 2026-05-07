@@ -28,7 +28,7 @@ import { Product } from "../types";
 const generateId = () => `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const EMPTY_PRODUCT: Omit<Product, "id"> = {
-  name: "", category: "Men's Shoes", price: 10000, image: "",
+  name: "", category: "Men's Shoes", price: 10000, discountedPrice: undefined, image: "",
   description: "", colors: ["Black/White"],
   sizes: ["39", "40", "41", "42", "43", "44", "45"],
   gallery: [], isNew: false, isFeatured: false, subtitle: "", scarcityMessage: "",
@@ -338,6 +338,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ initial, onSave, onCancel }) 
               <input className={adminInput} type="number" min={0} step={100} placeholder="12000"
                 value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} />
             </Field>
+            <Field label="Discounted Price (৳)" icon={DollarSign}>
+              <input className={adminInput} type="number" min={0} step={100} placeholder="Leave empty if no discount"
+                value={form.discountedPrice ?? ""} onChange={e => setForm(f => ({ ...f, discountedPrice: e.target.value ? Number(e.target.value) : undefined }))} />
+            </Field>
             <Field label="Colors (comma sep.)" icon={Palette} span2>
               <input className={adminInput} placeholder="Black/White, Red, Blue"
                 value={colorsInput} onChange={e => setColorsInput(e.target.value)} />
@@ -526,7 +530,17 @@ const ProductsPanel: React.FC = () => {
                     {product.isFeatured && <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full font-black uppercase">★</span>}
                   </div>
                   <p className="text-[10px] text-white/35 mt-0.5 truncate">{product.category}</p>
-                  <p className="text-sm font-black text-violet-400 mt-0.5">৳{product.price.toLocaleString()}</p>
+                  {product.discountedPrice && product.discountedPrice < product.price ? (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs font-medium text-white/30 line-through">৳{product.price.toLocaleString()}</p>
+                      <p className="text-sm font-black text-red-400">৳{product.discountedPrice.toLocaleString()}</p>
+                      <span className="text-[8px] bg-red-500/20 text-red-400 border border-red-500/20 px-1.5 py-0.5 rounded-full font-black uppercase">
+                        {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-black text-violet-400 mt-0.5">৳{product.price.toLocaleString()}</p>
+                  )}
                 </div>
                 {/* Actions */}
                 <div className="flex items-center gap-1.5 shrink-0">

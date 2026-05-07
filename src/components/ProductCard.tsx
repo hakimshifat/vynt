@@ -44,9 +44,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
           <h3 className="text-sm font-extrabold uppercase tracking-tighter group-hover:underline">
             <Link to={`/product/${product.id}`}>{product.name}</Link>
           </h3>
-          <p className="text-sm font-semibold">৳{product.price.toLocaleString()}</p>
+          {product.discountedPrice && product.discountedPrice < product.price ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <p className="text-[11px] font-medium text-nike-muted line-through">৳{product.price.toLocaleString()}</p>
+              <p className="text-sm font-bold text-red-600">৳{product.discountedPrice.toLocaleString()}</p>
+            </div>
+          ) : (
+            <p className="text-sm font-semibold">৳{product.price.toLocaleString()}</p>
+          )}
         </div>
         <p className="text-xs text-nike-muted font-medium uppercase">{product.category}</p>
+        {product.discountedPrice && product.discountedPrice < product.price && (
+          <span className="inline-block text-[9px] font-black text-white bg-red-600 uppercase tracking-widest px-2 py-0.5 rounded-sm mt-1">
+            {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
+          </span>
+        )}
         {product.scarcityMessage && (
           <p className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-1">
             {product.scarcityMessage}

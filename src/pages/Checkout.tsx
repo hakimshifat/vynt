@@ -366,7 +366,16 @@ const Checkout = () => {
                     <p className="text-[10px] text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
                       Qty {item.quantity} · Size {item.selectedSize}
                     </p>
-                    <p className="text-xs font-black mt-1">৳{(item.price * item.quantity).toLocaleString()}</p>
+                    <p className="text-xs font-black mt-1">
+                      {item.discountedPrice && item.discountedPrice < item.price ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-[10px] font-medium text-nike-muted line-through">৳{(item.price * item.quantity).toLocaleString()}</span>
+                          <span className="text-red-600">৳{(item.discountedPrice * item.quantity).toLocaleString()}</span>
+                        </span>
+                      ) : (
+                        <>৳{((item.discountedPrice ?? item.price) * item.quantity).toLocaleString()}</>
+                      )}
+                    </p>
                   </div>
                 </div>
               ))}

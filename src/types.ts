@@ -12,6 +12,7 @@ export interface Product {
   isFeatured?: boolean;
   subtitle?: string;
   scarcityMessage?: string;
+  discountedPrice?: number;
 }
 
 export interface CartItem extends Product {

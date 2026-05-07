@@ -114,7 +114,17 @@ const ProductDetail = () => {
             <div className="space-y-2">
               <p className="text-sm font-medium text-nike-black uppercase">Sustainable Materials</p>
               <h1 className="text-4xl font-extrabold uppercase tracking-tighter leading-none">{product.name}</h1>
-              <p className="text-lg font-semibold mt-2">৳{product.price.toLocaleString()}</p>
+              {product.discountedPrice && product.discountedPrice < product.price ? (
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                  <p className="text-base font-medium text-nike-muted line-through">৳{product.price.toLocaleString()}</p>
+                  <p className="text-xl font-black text-red-600">৳{product.discountedPrice.toLocaleString()}</p>
+                  <span className="text-[10px] font-black text-white bg-red-600 uppercase tracking-widest px-2.5 py-1 rounded-sm">
+                    SAVE {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}%
+                  </span>
+                </div>
+              ) : (
+                <p className="text-lg font-semibold mt-2">৳{product.price.toLocaleString()}</p>
+              )}
             </div>
 
             <div className="space-y-4">

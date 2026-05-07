@@ -36,6 +36,7 @@ interface ProductRow {
   is_featured: boolean | null;
   subtitle: string | null;
   scarcity_message: string | null;
+  discounted_price: number | null;
 }
 
 function fromRow(row: ProductRow): Product {
@@ -53,6 +54,7 @@ function fromRow(row: ProductRow): Product {
     isFeatured: row.is_featured ?? false,
     subtitle: row.subtitle ?? "",
     scarcityMessage: row.scarcity_message ?? "",
+    discountedPrice: row.discounted_price ?? undefined,
   };
 }
 
@@ -71,6 +73,7 @@ function toRow(product: Product) {
     is_featured: product.isFeatured ?? false,
     subtitle: product.subtitle ?? null,
     scarcity_message: product.scarcityMessage ?? null,
+    discounted_price: product.discountedPrice ?? null,
   };
 }
 
