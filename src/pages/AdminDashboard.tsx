@@ -584,7 +584,7 @@ const VoucherPanel: React.FC = () => {
   const handleSave = () => {
     if (!form.code.trim() || !form.value) return;
     const voucher: Voucher = { ...form, code: form.code.trim().toUpperCase(), usedCount: editVoucher?.usedCount ?? 0 };
-    if (editVoucher) updateVoucher(voucher); else addVoucher(voucher);
+    if (editVoucher) updateVoucher(editVoucher.code, voucher); else addVoucher(voucher);
     setSaved(true);
     setTimeout(() => { setSaved(false); setShowForm(false); }, 500);
   };
@@ -619,7 +619,7 @@ const VoucherPanel: React.FC = () => {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <Field label="Code" icon={Hash}>
                   <input className={`${adminInput} uppercase`} placeholder="VYNT20"
-                    value={form.code} disabled={!!editVoucher}
+                    value={form.code}
                     onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} />
                 </Field>
                 <Field label="Type" icon={Percent}>

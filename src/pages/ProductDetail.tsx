@@ -113,6 +113,10 @@ const ProductDetail = () => {
           <div className="space-y-8">
             <div className="space-y-2">
               <p className="text-sm font-medium text-nike-black uppercase">Sustainable Materials</p>
+              <div className="flex flex-wrap gap-2 mb-1">
+                {product.isNew && <span className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm">New Release</span>}
+                {product.isFeatured && <span className="bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm">Featured</span>}
+              </div>
               <h1 className="text-4xl font-extrabold uppercase tracking-tighter leading-none">{product.name}</h1>
               {product.discountedPrice && product.discountedPrice < product.price ? (
                 <div className="flex items-center gap-3 mt-2 flex-wrap">

@@ -7,7 +7,11 @@ import ProductCard from "../components/ProductCard";
 
 const Home = () => {
   const { products } = useProducts();
-  const featuredProducts = products.filter(p => p.isFeatured);
+  let featuredProducts = products.filter(p => p.isFeatured);
+  if (featuredProducts.length < 4) {
+    const remaining = products.filter(p => !p.isFeatured);
+    featuredProducts = [...featuredProducts, ...remaining].slice(0, Math.max(featuredProducts.length, 4));
+  }
 
   return (
     <div className="space-y-20 pb-20">
@@ -71,7 +75,7 @@ const Home = () => {
             Shop All <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredProducts.map((product, index) => (
             <ProductCard key={product.id} product={product} index={index} />
           ))}

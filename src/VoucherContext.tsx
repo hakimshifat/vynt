@@ -28,7 +28,7 @@ interface VoucherContextType {
   removeApplied: () => void;
   // Admin ops
   addVoucher: (v: Voucher) => void;
-  updateVoucher: (v: Voucher) => void;
+  updateVoucher: (oldCode: string, v: Voucher) => void;
   deleteVoucher: (code: string) => void;
 }
 
@@ -205,10 +205,16 @@ export const VoucherProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateVoucher = async (v: Voucher) => {
+  const updateVoucher = async (oldCode: string, v: Voucher) => {
     try {
-      const { error } = await supabase.from(COLLECTION).upsert(toRow(v));
-      if (error) throw error;
+      if (oldCode !== v.code) {
+        const { error } = await supabase.from(COLLECTION).update(toRow(v)).eq("code", oldCode);
+        if (error) throw error;
+        if (appliedVoucher?.code === oldCode) setAppliedVoucher(null);
+      } else {
+        const { error } = await supabase.from(COLLECTION).upsert(toRow(v));
+        if (error) throw error;
+      }
     } catch (err) {
       console.error("[VoucherContext] updateVoucher failed:", err);
     }
