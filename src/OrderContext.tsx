@@ -30,7 +30,7 @@ export interface Order {
   shipping: number;
   discount: number;
   total: number;
-  paymentMethod: "bkash";
+  paymentMethod: "bkash" | "cod";
   transactionId?: string;  // bKash transaction code submitted by customer
   voucherCode?: string;
   status: OrderStatus;
@@ -55,7 +55,7 @@ interface OrderRow {
   shipping: number;
   discount: number;
   total: number;
-  payment_method: "bkash";
+  payment_method: "bkash" | "cod";
   transaction_id: string | null;
   voucher_code: string | null;
   status: OrderStatus;

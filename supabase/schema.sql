@@ -40,7 +40,8 @@ create table if not exists public.orders (
   shipping numeric not null,
   discount numeric not null,
   total numeric not null,
-  payment_method text not null default 'bkash',
+  payment_method text not null default 'bkash'
+    check (payment_method in ('bkash', 'cod')),
   transaction_id text,
   voucher_code text,
   status text not null default 'pending'
@@ -144,7 +145,7 @@ for insert to anon with check (
   and shipping >= 0
   and discount >= 0
   and total >= 0
-  and payment_method = 'bkash'
+  and payment_method in ('bkash', 'cod')
   and status = 'pending'
 );
 drop policy if exists "Authenticated orders insert" on public.orders;
@@ -159,7 +160,7 @@ for insert to authenticated with check (
   and shipping >= 0
   and discount >= 0
   and total >= 0
-  and payment_method = 'bkash'
+  and payment_method in ('bkash', 'cod')
   and status = 'pending'
 );
 drop policy if exists "Admin orders select" on public.orders;

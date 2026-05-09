@@ -801,7 +801,7 @@ const OrdersPanel: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-sm font-bold text-white truncate">{order.customer.firstName} {order.customer.lastName}</p>
-                  <p className="text-[10px] text-white/30">{order.items.length} item{order.items.length !== 1 ? "s" : ""} • {order.paymentMethod === "bkash" ? "bKash" : "Card"}</p>
+                  <p className="text-[10px] text-white/30">{order.items.length} item{order.items.length !== 1 ? "s" : ""} • {order.paymentMethod === "bkash" ? "bKash" : order.paymentMethod === "cod" ? "Cash on Delivery" : "Card"}</p>
                 </div>
                 {/* Total + expand */}
                 <div className="flex items-center gap-2 shrink-0">

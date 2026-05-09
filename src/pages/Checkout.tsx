@@ -55,6 +55,7 @@ const Checkout = () => {
   const { shipping: shippingConfig } = useShipping();
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "bkash">("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -84,7 +85,7 @@ const Checkout = () => {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!form.transactionId.trim()) {
+    if (paymentMethod === "bkash" && !form.transactionId.trim()) {
       setError("Please enter your bKash Transaction ID before submitting.");
       return;
     }
@@ -103,8 +104,8 @@ const Checkout = () => {
         shipping,
         discount,
         total,
-        paymentMethod: "bkash",
-        transactionId: form.transactionId.trim(),
+        paymentMethod,
+        transactionId: paymentMethod === "bkash" ? form.transactionId.trim() : undefined,
       };
 
       if (form.email.trim()) orderPayload.customer.email = form.email.trim();
@@ -248,74 +249,132 @@ const Checkout = () => {
               </div>
             </section>
 
-            {/* bKash Payment */}
+            {/* Payment Method */}
             <section className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded bg-[#e2136e] flex items-center justify-center">
-                  <span className="text-[8px] text-white font-black">b</span>
-                </div>
-                <h2 className="text-lg font-black uppercase tracking-tighter">bKash Payment</h2>
+                <ShieldCheck size={18} />
+                <h2 className="text-lg font-black uppercase tracking-tighter">Payment Method</h2>
               </div>
-
-              {/* Instructions card */}
-              <div className="bg-[#fff0f6] border border-[#e2136e]/20 rounded-2xl overflow-hidden">
-                <div className="bg-[#e2136e] px-5 py-3 flex items-center gap-2">
-                  <span className="text-white font-black text-sm tracking-wide">How to Pay</span>
-                </div>
-                <div className="p-5 space-y-4">
-                  <ol className="space-y-3 text-sm text-nike-black/80">
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">1</span>
-                      <span>Open your <strong>bKash app</strong> and tap <strong>Send Money</strong></span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">2</span>
-                      <div>
-                        <span>Send <strong>৳{total.toLocaleString()}</strong> to our bKash number:</span>
-                        <div className="mt-2 flex items-center gap-3">
-                          <div className="flex-1 bg-white border-2 border-[#e2136e]/30 rounded-xl px-4 py-3 font-mono font-black text-base text-[#e2136e] tracking-widest select-all">
-                            {BKASH_NUMBER}
-                          </div>
-                          <button type="button" onClick={copyNumber}
-                            className="flex items-center gap-1.5 px-4 py-3 bg-[#e2136e] hover:bg-[#c4115f] text-white text-xs font-black rounded-xl transition-colors shrink-0">
-                            {copied ? <Check size={14} /> : <Copy size={14} />}
-                            {copied ? "Copied!" : "Copy"}
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">3</span>
-                      <span>Write your <strong>Order total amount</strong> in the reference if prompted</span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">4</span>
-                      <span>Copy the <strong>Transaction ID</strong> from your confirmation SMS and paste it below</span>
-                    </li>
-                  </ol>
-
-                  {/* Transaction ID Input */}
-                  <div className="space-y-2 pt-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-[#e2136e]">
-                      bKash Transaction ID *
-                    </label>
-                    <input
-                      required
-                      name="transactionId"
-                      placeholder="e.g. 8K3B2L9XYZ"
-                      value={form.transactionId}
-                      onChange={handleField}
-                      className="w-full px-5 py-4 border-2 border-[#e2136e]/30 rounded-xl text-sm font-mono focus:border-[#e2136e] outline-none transition-colors bg-white placeholder-nike-black/20 uppercase"
-                    />
-                    <p className="text-[11px] text-nike-black/40 font-medium">
-                      Found in your bKash SMS confirmation after sending payment.
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("cod")}
+                  className={`p-5 border-2 rounded-xl flex items-center justify-between transition-all ${
+                    paymentMethod === "cod"
+                      ? "border-nike-black bg-nike-gray/30"
+                      : "border-nike-black/10 hover:border-nike-black/30"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest">Cash on Delivery</p>
+                    <p className="text-xs text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      Pay when you receive
                     </p>
                   </div>
-                </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    paymentMethod === "cod" ? "border-nike-black bg-nike-black" : "border-nike-black/20"
+                  }`}>
+                    {paymentMethod === "cod" && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("bkash")}
+                  className={`p-5 border-2 rounded-xl flex items-center justify-between transition-all ${
+                    paymentMethod === "bkash"
+                      ? "border-nike-black bg-nike-gray/30"
+                      : "border-nike-black/10 hover:border-nike-black/30"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-4 rounded bg-[#e2136e] flex items-center justify-center shrink-0">
+                        <span className="text-[7px] text-white font-black">b</span>
+                      </div>
+                      <p className="text-sm font-black uppercase tracking-widest">bKash</p>
+                    </div>
+                    <p className="text-xs text-nike-black/50 font-medium uppercase tracking-widest mt-0.5">
+                      Direct mobile payment
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    paymentMethod === "bkash" ? "border-nike-black bg-nike-black" : "border-nike-black/20"
+                  }`}>
+                    {paymentMethod === "bkash" && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                </button>
               </div>
 
+              {/* bKash Instructions card */}
+              <AnimatePresence>
+                {paymentMethod === "bkash" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-[#fff0f6] border border-[#e2136e]/20 rounded-2xl overflow-hidden mt-4">
+                      <div className="bg-[#e2136e] px-5 py-3 flex items-center gap-2">
+                        <span className="text-white font-black text-sm tracking-wide">How to Pay with bKash</span>
+                      </div>
+                      <div className="p-5 space-y-4">
+                        <ol className="space-y-3 text-sm text-nike-black/80">
+                          <li className="flex gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">1</span>
+                            <span>Open your <strong>bKash app</strong> and tap <strong>Send Money</strong></span>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">2</span>
+                            <div>
+                              <span>Send <strong>৳{total.toLocaleString()}</strong> to our bKash number:</span>
+                              <div className="mt-2 flex items-center gap-3">
+                                <div className="flex-1 bg-white border-2 border-[#e2136e]/30 rounded-xl px-4 py-3 font-mono font-black text-base text-[#e2136e] tracking-widest select-all">
+                                  {BKASH_NUMBER}
+                                </div>
+                                <button type="button" onClick={copyNumber}
+                                  className="flex items-center gap-1.5 px-4 py-3 bg-[#e2136e] hover:bg-[#c4115f] text-white text-xs font-black rounded-xl transition-colors shrink-0">
+                                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                                  {copied ? "Copied!" : "Copy"}
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">3</span>
+                            <span>Write your <strong>Order total amount</strong> in the reference if prompted</span>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#e2136e] text-white text-xs font-black flex items-center justify-center shrink-0">4</span>
+                            <span>Copy the <strong>Transaction ID</strong> from your confirmation SMS and paste it below</span>
+                          </li>
+                        </ol>
+
+                        {/* Transaction ID Input */}
+                        <div className="space-y-2 pt-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-[#e2136e]">
+                            bKash Transaction ID *
+                          </label>
+                          <input
+                            required={paymentMethod === "bkash"}
+                            name="transactionId"
+                            placeholder="e.g. 8K3B2L9XYZ"
+                            value={form.transactionId}
+                            onChange={handleField}
+                            className="w-full px-5 py-4 border-2 border-[#e2136e]/30 rounded-xl text-sm font-mono focus:border-[#e2136e] outline-none transition-colors bg-white placeholder-nike-black/20 uppercase"
+                          />
+                          <p className="text-[11px] text-nike-black/40 font-medium">
+                            Found in your bKash SMS confirmation after sending payment.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Alternative: Call us */}
-              <div className="bg-nike-gray/40 border border-nike-black/8 rounded-2xl p-5">
+              <div className="bg-nike-gray/40 border border-nike-black/8 rounded-2xl p-5 mt-4">
                 <p className="text-xs font-black uppercase tracking-widest text-nike-black/50 mb-3">Prefer to order by phone?</p>
                 <div className="flex flex-wrap gap-3">
                   <a href={`tel:${CONTACT_PHONE}`}
@@ -405,7 +464,7 @@ const Checkout = () => {
 
             <div className="flex items-center gap-2 text-[10px] text-nike-black/35 font-bold uppercase tracking-widest pt-1">
               <ShieldCheck size={13} />
-              <span>bKash · Secure Checkout</span>
+              <span>Secure Checkout</span>
             </div>
           </div>
         </div>
